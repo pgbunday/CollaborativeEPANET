@@ -1,0 +1,3 @@
+[submodule "vendor/epanet-js"]
+	path = vendor/epanet-js
+	url = https://github.com/modelcreate/epanet-js
