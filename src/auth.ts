@@ -1,4 +1,4 @@
-import * as bcrypt from "bcrypt";
+import bcryptjs from "bcryptjs";
 import { getDb } from "./db.js";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -14,8 +14,8 @@ import { z } from "zod";
 // }
 
 async function hashPassword(password: string): Promise<string> {
-    const salt = await bcrypt.genSalt(10);
-    const hashed = await bcrypt.hash(password, salt);
+    const salt = await bcryptjs.genSalt(10);
+    const hashed = await bcryptjs.hash(password, salt);
     return hashed;
 }
 
@@ -34,7 +34,7 @@ export async function getUserByUsernamePassword(username: string, password: stri
     try {
         const maybe_user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
         const ret = DbUserSchema.parse(maybe_user);
-        if (await bcrypt.compare(password, ret.hashed_password)) {
+        if (await bcryptjs.compare(password, ret.hashed_password)) {
             return ret;
         } else {
             return null;

@@ -32,7 +32,7 @@
 import type { GeoJSON, Geometry, GeoJsonProperties, FeatureCollection } from "geojson";
 import { EpanetState } from "../epanet/epanet_state.js";
 import type { ClientActionsSchema } from "../epanet_types.js";
-import { clone } from "@turf/turf";
+import { clone } from "@turf/clone";
 
 class ModelState {
     junctions: FeatureCollection<Geometry, GeoJsonProperties>

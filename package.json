@@ -9,9 +9,9 @@
     "@hono/node-server": "^1.13.8",
     "@hono/node-ws": "^1.0.7",
     "@maptiler/geocoding-control": "^2.1.6",
-    "@turf/turf": "^7.2.0",
+    "@turf/clone": "^7.2.0",
     "@types/better-sqlite3": "^7.6.12",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.0",
     "better-sqlite3": "^11.8.1",
     "dotenv": "^16.4.7",
     "epanet-js": "file:./vendor/epanet-js/packages/epanet-js",
@@ -22,7 +22,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
     "@types/geojson": "^7946.0.16",
     "@types/leaflet": "^1.9.16",
     "@types/node": "^20.11.17",

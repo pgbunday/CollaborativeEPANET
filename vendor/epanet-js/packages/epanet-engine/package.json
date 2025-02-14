@@ -14,7 +14,7 @@
     "serve": "http-server -c0 dist"
   },
   "keywords": [],
-  "devDependencies": {
+  "_devDependencies": {
     "http-server": "*"
   },
   "author": "",
