@@ -1,0 +1,53 @@
+{
+  "version": "0.7.0",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/modelcreate/epanet-js.git"
+  },
+  "scripts": {
+    "start": "tsdx watch",
+    "build": "tsdx build",
+    "test": "tsdx test",
+    "test:CI": "CI=true tsdx test",
+    "lint": "tsdx lint",
+    "prepare": "tsdx build"
+  },
+  "dependencies": {
+    "@model-create/epanet-engine": "file:../epanet-engine"
+  },
+  "peerDependencies": {},
+  "husky": {
+    "hooks": {
+      "pre-commit": "tsdx lint"
+    }
+  },
+  "jest": {
+    "coveragePathIgnorePatterns": [
+      "<rootDir>/src/enum/",
+      "<rootDir>/node_modules/"
+    ]
+  },
+  "prettier": {
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "name": "epanet-js",
+  "description": "EPANET engine in javascript",
+  "author": "Luke Butler",
+  "module": "dist/epanet-js.esm.js",
+  "devDependencies": {
+    "@types/jest": "^24.0.25",
+    "husky": "^3.1.0",
+    "tsdx": "^0.12.1",
+    "tslib": "^1.10.0",
+    "typescript": "^3.7.4"
+  }
+}

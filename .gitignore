@@ -1,3 +1,12 @@
+# Project database
+/collab.sqlite
+# One tile cache
+/tmp_tiles
+# Another tile cache
+/static
+# Client builds
+/build-client
+
 # Logs
 logs
 *.log
@@ -89,7 +98,7 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+#dist
 
 # Gatsby files
 .cache/

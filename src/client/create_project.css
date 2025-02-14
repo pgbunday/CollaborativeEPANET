@@ -1,0 +1,26 @@
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+.app-container {
+    display: flex;
+    flex-flow: column;
+    height: 100%;
+}
+
+.container {
+    /* border: 1px dotted red; */
+}
+
+.toolbar-container {
+    flex: 0 1 auto;
+}
+
+.map-container {
+    display: flex;
+    flex-flow: column;
+    flex: 1 1 auto;
+    /* overflow-y: auto; */
+}

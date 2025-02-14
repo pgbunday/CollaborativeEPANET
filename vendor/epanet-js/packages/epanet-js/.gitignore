@@ -1,0 +1,12 @@
+*.log
+.DS_Store
+node_modules
+# Keep dist so everyone can use prebuilt files
+#dist
+coverage
+
+# API Markdown Folders
+temp
+etc
+input
+markdown

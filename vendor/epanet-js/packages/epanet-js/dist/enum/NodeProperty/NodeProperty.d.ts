@@ -1,0 +1,32 @@
+declare enum NodeProperty {
+    Elevation = 0,
+    BaseDemand = 1,
+    Pattern = 2,
+    Emitter = 3,
+    Initqual = 4,
+    SourceQual = 5,
+    SourcePat = 6,
+    SourceType = 7,
+    TankLevel = 8,
+    Demand = 9,
+    Head = 10,
+    Pressure = 11,
+    Quality = 12,
+    SourceMass = 13,
+    InitVolume = 14,
+    MixModel = 15,
+    MixZoneVol = 16,
+    TankDiam = 17,
+    MinVolume = 18,
+    VolCurve = 19,
+    MinLevel = 20,
+    MaxLevel = 21,
+    MixFraction = 22,
+    TankKBulk = 23,
+    TankVolume = 24,
+    MaxVolume = 25,
+    CanOverFlow = 26,
+    DemandDeficit = 27
+}
+export default NodeProperty;
+//# sourceMappingURL=NodeProperty.d.ts.map
