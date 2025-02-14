@@ -27,7 +27,8 @@ export const DbProjectUserSchema = z.object({
 })
 export type DbProjectUserSchema = z.infer<typeof DbProjectUserSchema>;
 
-// TODO: customizable flow units
+// TODO: customizable flow units and head loss type. Also, store the UTM zone
+// of the center coordinate for accurate conversions between long/lat and UTM.
 export function insertProject(name: string, owner: DbUserSchema, longitude: number, latitude: number, zoom: number): DbProjectSchema | null {
     const db = getDb();
     const now = new Date();

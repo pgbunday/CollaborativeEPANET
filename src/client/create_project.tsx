@@ -5,17 +5,9 @@ import '@maptiler/geocoding-control/style.css';
 import { render, useState } from 'hono/jsx/dom';
 import { GeocodingControl } from '@maptiler/geocoding-control/maplibregl';
 
-// World overview with PMTiles
-// const protocol = new Protocol();
-// maplibregl.addProtocol('pmtiles', protocol.tile);
-
-// TODO: put longitude and latitude in the form somehow
-
 const map = new maplibregl.Map({
     container: 'map',
-    // style: 'https://demotiles.maplibre.org/style.json',
     style: {
-        // TODO: glyphs and sprite
         sources: {
             'satellite': {
                 type: 'raster',
@@ -31,9 +23,6 @@ const map = new maplibregl.Map({
                 type: 'raster',
             }
         ]
-        // glyphs: '/static/basemaps-assets-main/fonts/{fontstack}/{range}.pbf',
-        // sprite: '/static/basemaps-assets-main/sprites/v4/light',
-        // sprite: 'http://localhost:3000/static/basemaps-assets-main/sprites/v4/light',
     },
     center: [-102, 39],
     zoom: 4,

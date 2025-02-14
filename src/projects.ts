@@ -1,9 +1,8 @@
 import type { WSContext, WSMessageReceive } from "hono/ws";
 import { updateProjectInp, type DbProjectSchema } from "./db_project.js";
 import type { DbUserSchema } from "./auth.js";
-import { LinkProperty, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
 import { z } from "zod";
-import { AddJunctionSchema, AddReservoirSchema, AddTankSchema, ClientActionsSchema, EpanetChangeSchema, ProjectInitSchema, AddPipeSchema } from "./epanet_types.js";
+import { ClientActionsSchema, EpanetChangeSchema, ProjectInitSchema } from "./epanet_types.js";
 import { getDb } from "./db.js";
 import { EpanetState } from "./epanet/epanet_state.js";
 
@@ -99,8 +98,6 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, user: DbU
     const state = activeProjects.get(project.uuid);
     if (state) {
         const backup = state.epanet.clone();
-        // state.project.saveInpFile('project.inp');
-        // const currentInp = state.workspace.readFile('project.inp', 'utf8');
         try {
             const str = z.string().parse(message.data);
             const obj = JSON.parse(str);
@@ -135,7 +132,9 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, user: DbU
             updateProjectInp(project, latest_inp);
         } catch (err) {
             // On any error, reset state from the backup
-            // TODO: send the client a message saying their edit failed
+            // TODO: send the client a message saying their edit failed? They
+            // should already know that because they also have an EPANET model,
+            // but just in case we could report it back
             console.log(err);
             console.log(JSON.stringify(err));
             state.epanet = backup;

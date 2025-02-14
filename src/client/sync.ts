@@ -23,16 +23,17 @@
 // a message from the server, a very similar process occurs, but through the
 // synced state instead, and the synced GeoJSON is rendered.
 //
-// This whole process is encapsulated by two classes: (TODO: names!) one which
-// provides abstractions over GeoJSON and EpanetState, and another which has
-// two instances of that, called local and synced. The second class is exported
-// and is the only API that should be visible.
-// what name would make sense for the first one? ModelState? yeah that's fine
+// This whole process is encapsulated by two classes: ModelState and SyncState.
+// ModelState contains an instance of EpanetState and a few GeoJSON objects for
+// rendering, and is used for both local and synced state. Finally, the
+// SyncState class actually differentiates between the two sets of state when
+// applying updates and handles errors. When an update is successfully applied,
+// whether local or synced from the server, the map is re rendered with that
+// set of state.
 
-import type { GeoJSON, Geometry, GeoJsonProperties, FeatureCollection } from "geojson";
+import type { Geometry, GeoJsonProperties, FeatureCollection } from "geojson";
 import { EpanetState } from "../epanet/epanet_state.js";
 import type { ClientActionsSchema } from "../epanet_types.js";
-import { clone } from "@turf/clone";
 
 class ModelState {
     junctions: FeatureCollection<Geometry, GeoJsonProperties>

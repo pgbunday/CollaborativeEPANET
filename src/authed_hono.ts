@@ -125,9 +125,6 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
         }
     })
 
-    // TODO: figure out how to call upgradeWebSocket() from this file
-    // Maybe make this module export a function, which takes in upgradeWebSocket and maybe
-    // other parameters, and returns authed?
     authed.get('/projects/:project_uuid/ws', upgradeWebSocket((c) => {
         // TODO: is there a way to tell the client they're not authorized?
         // Right now the WS upgrade always succeeds. Maybe add onOpen where I currently

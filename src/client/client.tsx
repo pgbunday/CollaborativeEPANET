@@ -1,22 +1,17 @@
-// I don't think maplibre-gl is really modularized, and even if it were,
-// we couldn't use that because the GeocodingControl for searching only takes
-// a reference to the whole module. To shrink the bundle size, we would have to
-// refactor to use Leaflet.
+
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import "./client.css"
-import { render, useEffect, useRef, useState, type RefObject } from 'hono/jsx/dom';
+import { render, useRef, useState, type RefObject } from 'hono/jsx/dom';
 import { GeocodingControl } from '@maptiler/geocoding-control/maplibregl';
 import '@maptiler/geocoding-control/style.css';
-import { EpanetChangeSchema, type AddJunctionSchema, type ClientActionsSchema } from '../epanet_types.js';
+import { EpanetChangeSchema, type ClientActionsSchema } from '../epanet_types.js';
 import { z } from 'zod';
 import { SyncState } from './sync.js';
 import AddJunctionPopup from './components/AddJunctionPopup.js';
 import AddReservoirPopup from './components/AddReservoirPopup.js';
 import proj4 from 'proj4';
 import AddTankPopup from './components/AddTankPopup.js';
-import type { JSX } from 'hono/jsx/jsx-runtime';
-// import type { JSX } from 'hono/jsx';
 
 proj4.defs('utm15n', '+proj=utm +zone=15 +datum=WGS84 +units=m +no_defs +type=crs');
 console.log(proj4('EPSG:4326', 'utm15n', [-90.8889, 14.7416]));
@@ -169,7 +164,6 @@ map.on('load', async (e) => {
                         addPipeState.start(e.features[0].properties.id);
                     } else {
                         addPipeState.finish(e.features[0].properties.id);
-                        // TODO: more handling. Send the request.
                         const vertices = [];
                         for (const latLng of addPipeState.intermediate_coordinates) {
                             vertices.push({ x: latLng.longitude, y: latLng.latitude });
@@ -319,7 +313,7 @@ function handleMapClick(e: maplibregl.MapMouseEvent & Object) {
     } else if (clickMode == "add_pipe") {
         // the base map is below any other points, so if the user is in
         // add_pipe mode, they must be adding an intermediate point
-        // TODO: show the intermediate points?
+        // TODO: show the intermediate points before the pipe is finished?
         addPipeState.addPoint(e.lngLat.lng, e.lngLat.lat);
     } else if (clickMode == "add_reservoir") {
         const popup = createBasePopup(e);
@@ -383,8 +377,6 @@ function ShareModal(props: { dialogRef: RefObject<HTMLDialogElement | null> }) {
             <dialog class="share-dialog" ref={props.dialogRef}>
                 <label>Username: <input type="text" name="username" onChange={(e) => setUsername(e.target.value)} /></label>
                 <button type="submit" onClick={async (e) => {
-                    // e.preventDefault();
-                    // TODO: send a POST, add_user
                     const response = await fetch(project_path + '/add_user', {
                         body: JSON.stringify({
                             username,
@@ -394,6 +386,8 @@ function ShareModal(props: { dialogRef: RefObject<HTMLDialogElement | null> }) {
                         ],
                         method: 'POST',
                     });
+                    // TODO: display success or failure by parsing response
+                    props.dialogRef.current?.close();
                 }}>Share</button>
                 <button onClick={() => props.dialogRef.current?.close()}>Close</button>
             </dialog>

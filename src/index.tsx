@@ -1,19 +1,14 @@
 import { serve } from '@hono/node-server'
 import { Hono, type Context } from 'hono'
 import { html } from 'hono/html';
-import { type FC } from 'hono/jsx';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { DbUserSchema, getUserByAuthToken, getUserByUsername, getUserByUsernamePassword, insertUser } from './auth.js';
-import { addUserToProject, DbProjectSchema, getProjectByUuid, getUserProjectRole, getUserProjects, insertProject } from './db_project.js';
+import { deleteCookie, setCookie } from 'hono/cookie';
+import { getUserByUsernamePassword, insertUser } from './auth.js';
 import { createNodeWebSocket } from '@hono/node-ws';
-import { handleClientWebSocketClose, handleClientWebSocketError, handleClientWebSocketMessage, handleClientWebSocketOpen } from './projects.js';
-import { z } from 'zod';
 import type { BaseMime } from 'hono/utils/mime';
 import { configDotenv } from 'dotenv';
 import Register from './server_components/Register.js';
 import Login from './server_components/Login.js';
-import Layout from './server_components/Layout.js';
 import Index from './server_components/Index.js';
 import createAuthed, { getUserFromContext } from './authed_hono.js';
 

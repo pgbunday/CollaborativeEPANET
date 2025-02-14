@@ -3,16 +3,6 @@ import { getDb } from "./db.js";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 
-// TODO: db management?
-// export interface DbUser {
-//     username: string,
-//     hashed_password: string,
-//     uuid: string,
-//     created_at: Date,
-//     last_active: Date,
-//     auth_token?: string,
-// }
-
 async function hashPassword(password: string): Promise<string> {
     const salt = await bcryptjs.genSalt(10);
     const hashed = await bcryptjs.hash(password, salt);
@@ -61,7 +51,6 @@ export async function insertUser(username: string, password: string): Promise<Db
     const now = new Date();
     const now_str = now.toISOString();
     const uuid = randomUUID();
-    // TODO: maybe different code for auth_token?
     const auth_token = randomUUID();
     try {
         const result = db.prepare('INSERT INTO users (username, hashed_password, uuid, created_at, last_active, auth_token) VALUES (@username, @hashed_password, @uuid, @now_str, @now_str, @auth_token)').run({
