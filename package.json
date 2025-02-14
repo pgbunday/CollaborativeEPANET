@@ -14,7 +14,7 @@
     "bcrypt": "^5.1.1",
     "better-sqlite3": "^11.8.1",
     "dotenv": "^16.4.7",
-    "epanet-js": "/home/jared/ewb/js-engine-eval/epanet-js/packages/epanet-js",
+    "epanet-js": "file:./vendor/epanet-js/packages/epanet-js",
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "hono": "^4.6.20",
     "maplibre-gl": "^5.1.0",
