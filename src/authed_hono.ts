@@ -2,6 +2,7 @@ import { z } from "zod";
 import { DbUserSchema, getUserByAuthToken, getUserByUsername } from "./auth.js";
 import { addUserToProject, DbProjectSchema, getProjectByUuid, getUserProjectRole, getUserProjects, insertProject } from "./db_project.js";
 import { Hono, type Context } from "hono";
+import { logger } from "hono/logger";
 import { getCookie } from "hono/cookie";
 import type { UpgradeWebSocket } from "hono/ws";
 import Projects from "./server_components/Projects.js";
@@ -27,6 +28,8 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
             user: DbUserSchema,
         }
     }>();
+
+    authed.use(logger());
 
     // Every authed route must have a user attached. If not, pages that are user
     // navigation are redirected to /login. API calls are just responded to with

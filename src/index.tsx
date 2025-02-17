@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server'
 import { Hono, type Context } from 'hono'
+import { logger } from 'hono/logger';
 import { html } from 'hono/html';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { deleteCookie, setCookie } from 'hono/cookie';
@@ -20,6 +21,7 @@ if (envParseError) {
 
 // Base app object, where all network functionality is eventually attached
 const app = new Hono()
+app.use(logger());
 
 // Start getting ready for the WebSocket server functionality
 const { upgradeWebSocket, injectWebSocket } = createNodeWebSocket({ app });
