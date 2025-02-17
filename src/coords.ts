@@ -1,4 +1,5 @@
 import proj4 from "proj4";
+import type { DbProjectSchema } from "./db_project.js";
 
 for (let i = 1; i <= 60; ++i) {
     proj4.defs('utm' + i + 'n', `+proj=utm +zone=${i} +datum=WGS84 +units=m +no_defs +type=crs`);
@@ -6,7 +7,7 @@ for (let i = 1; i <= 60; ++i) {
 }
 
 // Ported from https://github.com/Turbo87/utm/blob/master/utm/conversion.py
-export function getUtmZone(longitude: number, latitude: number): { zone: number, north: boolean } {
+export function getUtmZone(longitude: number, latitude: number): string {
     // Normalize longitude to be in the range [-180, 180)
     longitude = (longitude % 360 + 540) % 360 - 180
 
@@ -31,5 +32,13 @@ export function getUtmZone(longitude: number, latitude: number): { zone: number,
     } else {
         zone = Math.ceil((longitude + 180) / 6);
     }
-    return { zone, north: latitude > 0 }
+    return 'utm' + zone + (latitude > 0 ? "n" : "s");
+}
+
+export function utmToLongLat(utm_coords: number[], utm_zone: string): number[] {
+    return proj4(utm_zone, 'EPSG:4326', utm_coords);
+}
+
+export function longLatToUtm(long_lat: number[], utm_zone: string): number[] {
+    return proj4('EPSG:4326', utm_zone, long_lat);
 }

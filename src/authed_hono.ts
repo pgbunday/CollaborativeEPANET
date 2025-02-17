@@ -93,7 +93,7 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
         if (!role) {
             return c.redirect('/projects');
         }
-        return c.html(html`<!DOCTYPE html>${Client({ project_name: project.name, lng: project.longitude, lat: project.latitude, zoom: project.zoom })}`)
+        return c.html(html`<!DOCTYPE html>${Client({ project_name: project.name, lng: project.longitude, lat: project.latitude, zoom: project.zoom, utm_zone: project.utm_zone })}`)
     });
 
     authed.post('/projects/:project_uuid/add_user', async (c) => {

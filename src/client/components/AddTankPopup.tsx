@@ -1,11 +1,13 @@
 import { useState } from "hono/jsx";
 import type { ClientActionsSchema } from "../../epanet_types.js";
+import { longLatToUtm } from "../../coords.js";
 
 export default function AddTankPopup(props: {
     lngLat: maplibregl.LngLat,
     popup: maplibregl.Popup,
     project_path: string,
     ws: WebSocket,
+    utm_zone: string,
 }) {
     const [elevation, setElevation] = useState(0);
     const [id, setId] = useState("");
@@ -21,11 +23,12 @@ export default function AddTankPopup(props: {
         <label>Elevation: <input type="number" name="elevation" onChange={(e) => setElevation(Number(e.target.value))} /></label>
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
+            const utmCoords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);
             const toSend: ClientActionsSchema = {
                 type: "add_tank",
                 id,
-                longitude: props.lngLat.lng,
-                latitude: props.lngLat.lat,
+                x: utmCoords[0],
+                y: utmCoords[1],
                 elevation,
             };
             props.ws.send(JSON.stringify(toSend));

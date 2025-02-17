@@ -12,6 +12,8 @@ import AddJunctionPopup from './components/AddJunctionPopup.js';
 import AddReservoirPopup from './components/AddReservoirPopup.js';
 import proj4 from 'proj4';
 import AddTankPopup from './components/AddTankPopup.js';
+import PipePropertiesPopup from './components/PipePropertiesPopup.js';
+import { longLatToUtm } from '../coords.js';
 
 proj4.defs('utm15n', '+proj=utm +zone=15 +datum=WGS84 +units=m +no_defs +type=crs');
 console.log(proj4('EPSG:4326', 'utm15n', [-90.8889, 14.7416]));
@@ -20,6 +22,8 @@ const metaLatitude = document.querySelector('meta[name="map-center-lat"]')?.getA
 const metaLongitude = document.querySelector('meta[name="map-center-lng"]')?.getAttribute('value');
 const metaZoom = document.querySelector('meta[name="map-zoom"]')?.getAttribute('value');
 const metaProjectName = document.querySelector('meta[name="project-name"]')?.getAttribute('value');
+const metaUtmZone = document.querySelector('meta[name="utm-zone"]')?.getAttribute('value');
+const utm_zone = String(metaUtmZone);
 
 
 // Some non-React globals: store at least the project URL and UUID for use in
@@ -29,7 +33,7 @@ const project_path = document.location.pathname;
 const [_, project_uuid] = project_url.split('/projects/');
 
 
-const syncState = new SyncState();
+const syncState = new SyncState(utm_zone);
 
 const ws = new WebSocket(project_path + '/ws');
 ws.onopen = () => {
@@ -61,6 +65,7 @@ const map = new maplibregl.Map({
                 type: 'raster',
                 attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
                 tiles: ['/tiles/satellite/{z}/{x}/{y}.jpg'],
+                tileSize: 512,
             }
         },
         layers: [
@@ -166,7 +171,9 @@ map.on('load', async (e) => {
                         addPipeState.finish(e.features[0].properties.id);
                         const vertices = [];
                         for (const latLng of addPipeState.intermediate_coordinates) {
-                            vertices.push({ x: latLng.longitude, y: latLng.latitude });
+                            const utmCoords = longLatToUtm([latLng.longitude, latLng.latitude], utm_zone);
+                            vertices.push({ x: utmCoords[0], y: utmCoords[1] });
+                            // vertices.push({ x: latLng.longitude, y: latLng.latitude });
                         }
                         // Auto length algorithm: either find the distance between start and finish,
                         // or start and first intermediate, plus last intermediate and finish, plus
@@ -267,9 +274,33 @@ map.on('load', async (e) => {
         },
         paint: {
             'line-color': '#FF0',
-            'line-width': 8,
+            'line-width': 3,
         }
     });
+    // map.on('click', 'pipes-layer', (e) => {
+    //     const lngLat = e.lngLat;
+    //     if (clickMode == "pan") {
+    //         const popup = createBasePopup(e);
+    //         const feature = e.features![0];
+    //         const id = feature.properties.id;
+    //         // TODO: figure out a decent way of getting the default/existing
+    //         // values for diameter, intial_status, loss_coefficient (MinorLoss),
+    //         // and roughness. Do I store them in GeoJSON properties? Get them
+    //         // all here? idk, something to sleep on until tomorrow.
+    //         render(<PipePropertiesPopup
+    //             diameter={diameter}
+    //             id={id}
+    //             initial_status={initial_status}
+    //             length={length}
+    //             lngLat={lngLat}
+    //             loss_coefficient={loss_coefficient}
+    //             popup={popup}
+    //             project_path={project_path}
+    //             roughness={roughness}
+    //             ws={ws}
+    //         />, popup._content.firstChild);
+    //     }
+    // })
 
     map.on('click', (e) => {
         // Only run events relative to the base map if no other layers caught it
@@ -307,8 +338,14 @@ function handleMapClick(e: maplibregl.MapMouseEvent & Object) {
         const popup = createBasePopup(e);
         // Safety: popup._content.firstChild will be valid because of the
         // popup.setHTML() call in createBasePopup
+        render(<AddJunctionPopup
+            lngLat={e.lngLat}
+            popup={popup}
+            project_path={project_path}
+            ws={ws}
+            utm_zone={utm_zone}
         // @ts-ignore
-        render(<AddJunctionPopup lngLat={e.lngLat} popup={popup} project_path={project_path} ws={ws} />, popup._content.firstChild);
+        />, popup._content.firstChild);
         popup.addTo(map);
     } else if (clickMode == "add_pipe") {
         // the base map is below any other points, so if the user is in
@@ -319,15 +356,27 @@ function handleMapClick(e: maplibregl.MapMouseEvent & Object) {
         const popup = createBasePopup(e);
         // Safety: popup._content.firstChild will be valid because of the
         // popup.setHTML() call in createBasePopup
+        render(<AddReservoirPopup
+            lngLat={e.lngLat}
+            popup={popup}
+            project_path={project_path}
+            ws={ws}
+            utm_zone={utm_zone}
         // @ts-ignore
-        render(<AddReservoirPopup lngLat={e.lngLat} popup={popup} project_path={project_path} ws={ws} />, popup._content.firstChild);
+        />, popup._content.firstChild);
         popup.addTo(map);
     } else if (clickMode == "add_tank") {
         const popup = createBasePopup(e);
         // Safety: popup._content.firstChild will be valid because of the
         // popup.setHTML() call in createBasePopup
+        render(<AddTankPopup
+            lngLat={e.lngLat}
+            popup={popup}
+            project_path={project_path}
+            ws={ws}
+            utm_zone={utm_zone}
         // @ts-ignore
-        render(<AddTankPopup lngLat={e.lngLat} popup={popup} project_path={project_path} ws={ws} />, popup._content.firstChild);
+        />, popup._content.firstChild);
         popup.addTo(map);
     } else if (clickMode == "pan") {
         // do nothing, which is how pan is expected to work

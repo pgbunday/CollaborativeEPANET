@@ -16,7 +16,7 @@ class ProjectState {
         this.db = db;
         this.clients = new Set();
         this.clients.add(firstClient);
-        this.epanet = EpanetState.fromInp(this.db.inp_file);
+        this.epanet = EpanetState.fromInp(this.db.inp_file, db.utm_zone);
     }
     broadcast(message: EpanetChangeSchema) {
         const serialized = JSON.stringify(message);
@@ -119,6 +119,9 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, user: DbU
                     break;
                 case 'add_pipe':
                     state.epanet.addPipe(action);
+                    break;
+                case 'pipe_properties':
+                    state.epanet.pipeProperties(action);
                     break;
             }
             // notify all clients of the change

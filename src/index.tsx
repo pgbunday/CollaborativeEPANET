@@ -11,6 +11,7 @@ import Register from './server_components/Register.js';
 import Login from './server_components/Login.js';
 import Index from './server_components/Index.js';
 import createAuthed, { getUserFromContext } from './authed_hono.js';
+import { z } from 'zod';
 
 const { parsed: envParsed, error: envParseError } = configDotenv();
 if (envParseError) {
@@ -155,22 +156,30 @@ app.get('/static/create_project.css', async (c) => {
 // Caching layer for satellite tiles. Reduces API key use substantially when
 // constantly refreshing a project page in development.
 app.get('/tiles/satellite/:z/:x/:y_jpg', async (c) => {
-  const { z, x, y_jpg } = c.req.param();
+  const numberParse = z.coerce.number().min(0).max(18);
+  const zoomString = c.req.param().z;
+  const x = c.req.param().x;
+  const y_jpg = c.req.param().y_jpg;
+  // make sure zoom is in range [0, 18]
+  // On parse failure, the catch block will return 404 to the client
+  numberParse.parse(zoomString);
   try {
-    const contents = await readFile(`static/tiles/satellite/${z}/${x}/${y_jpg}`);
+    const contents = await readFile(`static/tiles/satellite/${zoomString}/${x}/${y_jpg}`);
     c.header('Content-Type', 'image/jpeg');
     return c.body(await new Blob([contents]).arrayBuffer());
   } catch (err) {
     // readFile failed, so fetch from origin
     try {
-      const response = await fetch(`https://api.maptiler.com/tiles/satellite-v2/${z}/${x}/${y_jpg}?key=${process.env.MAPTILER_API_KEY}`);
+      console.log('readFile failed');
+      const response = await fetch(`https://api.maptiler.com/tiles/satellite-v2/${zoomString}/${x}/${y_jpg}?key=${process.env.MAPTILER_API_KEY}`);
+      console.log('response:', response);
       const data = await response.bytes();
-      await mkdir(`static/tiles/satellite/${z}/${x}`, { recursive: true });
-      await writeFile(`static/tiles/satellite/${z}/${x}/${y_jpg}`, data);
+      await mkdir(`static/tiles/satellite/${zoomString}/${x}`, { recursive: true });
+      await writeFile(`static/tiles/satellite/${zoomString}/${x}/${y_jpg}`, data);
       c.header('Content-Type', 'image/jpeg');
       return c.body(await new Blob([data]).arrayBuffer());
     } catch (err) {
-      c.status(500);
+      c.status(404);
       return c.body(null);
     }
   }

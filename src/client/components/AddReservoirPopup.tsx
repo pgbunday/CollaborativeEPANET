@@ -1,11 +1,13 @@
 import { useState } from "hono/jsx";
 import type { ClientActionsSchema } from "../../epanet_types.js";
+import { longLatToUtm } from "../../coords.js";
 
 export default function AddReservoirPopup(props: {
     lngLat: maplibregl.LngLat,
     popup: maplibregl.Popup,
     project_path: string,
     ws: WebSocket,
+    utm_zone: string,
 }) {
     const [elevation, setElevation] = useState(0);
     const [id, setId] = useState("");
@@ -19,11 +21,12 @@ export default function AddReservoirPopup(props: {
         <label>ID: <input type="text" name="id" onChange={(e) => setId(e.target!.value)} /></label>
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
+            const utmCoords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);
             const toSend: ClientActionsSchema = {
                 type: "add_reservoir",
                 id,
-                longitude: props.lngLat.lng,
-                latitude: props.lngLat.lat,
+                x: utmCoords[0],
+                y: utmCoords[1],
             };
             props.ws.send(JSON.stringify(toSend));
             console.log('Sent add_reservoir');

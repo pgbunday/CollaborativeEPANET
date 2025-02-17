@@ -3,6 +3,7 @@ import { getDb } from "./db.js";
 import { randomUUID } from "crypto";
 import type { DbUserSchema } from "./auth.js";
 import { FlowUnits, HeadLossType, Project, Workspace } from "epanet-js";
+import { getUtmZone } from "./coords.js";
 
 export const DbProjectSchema = z.object({
     uuid: z.string(),
@@ -14,6 +15,9 @@ export const DbProjectSchema = z.object({
     longitude: z.coerce.number(),
     latitude: z.coerce.number(),
     zoom: z.coerce.number(),
+    // Formatted like `utm${ZONE_NUMBER}${ZONE_HEMI}`, resulting in 'utm15n'.
+    // Case sensitive as used in coords.ts
+    utm_zone: z.string(),
 });
 export type DbProjectSchema = z.infer<typeof DbProjectSchema>;
 
@@ -44,8 +48,9 @@ export function insertProject(name: string, owner: DbUserSchema, longitude: numb
         inp_file = ws.readFile('empty.inp', 'utf8');
         project.close();
     }
+    const utm_zone = getUtmZone(longitude, latitude);
     try {
-        const result = db.prepare('INSERT INTO projects (uuid, name, owner_uuid, inp_file, created_at, modified_at, longitude, latitude, zoom) VALUES (@uuid, @name, @owner_uuid, @inp_file, @created_at, @modified_at, @longitude, @latitude, @zoom)').run({
+        const result = db.prepare('INSERT INTO projects (uuid, name, owner_uuid, inp_file, created_at, modified_at, longitude, latitude, zoom, utm_zone) VALUES (@uuid, @name, @owner_uuid, @inp_file, @created_at, @modified_at, @longitude, @latitude, @zoom, @utm_zone)').run({
             uuid,
             name,
             owner_uuid: owner.uuid,
@@ -55,6 +60,7 @@ export function insertProject(name: string, owner: DbUserSchema, longitude: numb
             longitude,
             latitude,
             zoom,
+            utm_zone,
         });
         const roleResult = db.prepare('INSERT INTO project_user (project_uuid, user_uuid, role) VALUES (@project_uuid, @user_uuid, @role)').run({
             project_uuid: uuid,
@@ -72,6 +78,7 @@ export function insertProject(name: string, owner: DbUserSchema, longitude: numb
                 longitude,
                 latitude,
                 zoom,
+                utm_zone,
             }
         } else {
             return null;

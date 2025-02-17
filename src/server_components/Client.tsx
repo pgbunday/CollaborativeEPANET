@@ -6,6 +6,7 @@ export default function Client(props) {
         <meta name="map-center-lat" value={props.lat} />
         <meta name="map-zoom" value={props.zoom} />
         <meta name="project-name" value={props.project_name} />
+        <meta name="utm-zone" value={props.utm_zone} />
         <script src="/static/client.js" type="module"></script>
         <div id="app-container" class="app-container">
             <div id="toolbar" class="container toolbar-container">

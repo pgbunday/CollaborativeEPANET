@@ -1,6 +1,7 @@
-import { CountType, FlowUnits, HeadLossType, LinkProperty, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
-import type { AddJunctionSchema, AddPipeSchema, AddReservoirSchema, AddTankSchema } from "../epanet_types.js";
+import { CountType, FlowUnits, HeadLossType, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
+import type { AddJunctionSchema, AddPipeSchema, AddReservoirSchema, AddTankSchema, PipePropertiesSchema } from "../epanet_types.js";
 import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry } from "geojson";
+import { utmToLongLat } from "../coords.js";
 
 const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
@@ -11,6 +12,7 @@ type NodeGeoJSON = FeatureCollection<Geometry, GeoJsonProperties>;
 export class EpanetState {
     private workspace: Workspace
     private project: Project
+    private utm_zone: string
 
     /**
      * Sets up classes used by the netework, without actually initializing
@@ -18,10 +20,11 @@ export class EpanetState {
      * where initialization doesn't have to be immediate, it can be done
      * later with {@link openInp}
      */
-    constructor() {
+    constructor(utm_zone: string) {
         this.workspace = new Workspace();
         this.project = new Project(this.workspace);
         this.project.init(REPORT_FILENAME, OUTPUT_FILENAME, FlowUnits.GPM, HeadLossType.HW);
+        this.utm_zone = utm_zone;
     }
 
     openInp(inp_file: string) {
@@ -34,8 +37,8 @@ export class EpanetState {
      * @param inp_file An INP file built with EPANET
      * @returns A new object built with the INP file
      */
-    static fromInp(inp_file: string): EpanetState {
-        const state = new EpanetState();
+    static fromInp(inp_file: string, utm_zone: string): EpanetState {
+        const state = new EpanetState(utm_zone);
         state.workspace.writeFile(INP_FILENAME, inp_file);
         state.project.open(INP_FILENAME, REPORT_FILENAME, OUTPUT_FILENAME);
         return state;
@@ -55,7 +58,7 @@ export class EpanetState {
      */
     clone(): EpanetState {
         const inp_file = this.saveInp();
-        const backup = EpanetState.fromInp(inp_file);
+        const backup = EpanetState.fromInp(inp_file, this.utm_zone);
         return backup;
     }
 
@@ -68,7 +71,7 @@ export class EpanetState {
     addJunction(data: AddJunctionSchema) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Junction);
         this.project.setNodeValue(nodeIndex, NodeProperty.Elevation, data.elevation);
-        this.project.setCoordinates(nodeIndex, data.longitude, data.latitude);
+        this.project.setCoordinates(nodeIndex, data.x, data.y);
     }
 
     /**
@@ -79,7 +82,7 @@ export class EpanetState {
      */
     addReservoir(data: AddReservoirSchema) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Reservoir);
-        this.project.setCoordinates(nodeIndex, data.longitude, data.latitude);
+        this.project.setCoordinates(nodeIndex, data.x, data.y);
     }
 
     /**
@@ -91,7 +94,7 @@ export class EpanetState {
     addTank(data: AddTankSchema) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Tank);
         this.project.setNodeValue(nodeIndex, NodeProperty.Elevation, data.elevation);
-        this.project.setCoordinates(nodeIndex, data.longitude, data.latitude);
+        this.project.setCoordinates(nodeIndex, data.x, data.y);
     }
 
     /**
@@ -112,6 +115,19 @@ export class EpanetState {
             }
             this.project.setVertices(pipeIdx, xs, ys)
         }
+    }
+
+    pipeProperties(data: PipePropertiesSchema) {
+        const pipeIdx = this.project.getLinkIndex(data.id);
+        this.project.setLinkValue(pipeIdx, LinkProperty.Diameter, data.diameter);
+        this.project.setLinkValue(pipeIdx, LinkProperty.Length, data.length);
+        if (data.initial_status == "open") {
+            this.project.setLinkValue(pipeIdx, LinkProperty.InitStatus, LinkStatusType.Open)
+        } else if (data.initial_status == "closed") {
+            this.project.setLinkValue(pipeIdx, LinkProperty.InitStatus, LinkStatusType.Closed);
+        }
+        this.project.setLinkValue(pipeIdx, LinkProperty.Roughness, data.roughness);
+        this.project.setLinkValue(pipeIdx, LinkProperty.MinorLoss, data.loss_coefficient);
     }
 
     getAllNodesGeoJSON(): {
@@ -139,7 +155,8 @@ export class EpanetState {
             // All nodes should have coordinates attached, guaranteed by the API.
             // If not, there's a logic error somewhere
             const coords = this.project.getCoordinates(i);
-            const jsonCoords = [coords.x, coords.y];
+            const jsonCoordsXY = [coords.x, coords.y];
+            const jsonCoords = utmToLongLat(jsonCoordsXY, this.utm_zone)
 
             const nodeType = this.project.getNodeType(i);
             const feature: Feature = {
@@ -169,7 +186,7 @@ export class EpanetState {
     }
 
     // TODO: also handle other link types, not just LinkType.Pipe
-    getPipesGeoJSON(): FeatureCollection<Geometry, GeoJsonProperties> {
+    getPipesGeoJSON(utm_zone: string): FeatureCollection<Geometry, GeoJsonProperties> {
         const pipesGeoJSON: GeoJSON<Geometry, GeoJsonProperties> = {
             type: "FeatureCollection",
             features: [],
@@ -179,17 +196,20 @@ export class EpanetState {
             const linkType = this.project.getLinkType(i);
             if (linkType == LinkType.Pipe) {
                 const { node1, node2 } = this.project.getLinkNodes(i);
-                const startCoords = this.project.getCoordinates(node1);
-                const finishCoords = this.project.getCoordinates(node2);
-                const allCoords = [[startCoords.x, startCoords.y]];
+                const startCoordsXY = this.project.getCoordinates(node1);
+                const finishCoordsXY = this.project.getCoordinates(node2);
+                const startCoords = utmToLongLat([startCoordsXY.x, startCoordsXY.y], utm_zone);
+                const finishCoords = utmToLongLat([finishCoordsXY.x, finishCoordsXY.y], utm_zone);
+                const allCoords = [startCoords];
                 const nVertex = this.project.getVertexCount(i);
                 if (nVertex != 0) {
                     for (let vIdx = 1; vIdx <= nVertex; ++vIdx) {
                         const v = this.project.getVertex(i, vIdx);
-                        allCoords.push([v.x, v.y]);
+                        const longLat = utmToLongLat([v.x, v.y], utm_zone);
+                        allCoords.push(longLat);
                     }
                 }
-                allCoords.push([finishCoords.x, finishCoords.y]);
+                allCoords.push(finishCoords);
                 pipesGeoJSON.features.push({
                     type: "Feature",
                     geometry: {

@@ -34,6 +34,7 @@
 import type { Geometry, GeoJsonProperties, FeatureCollection } from "geojson";
 import { EpanetState } from "../epanet/epanet_state.js";
 import type { ClientActionsSchema } from "../epanet_types.js";
+import { utmToLongLat } from "../coords.js";
 
 class ModelState {
     junctions: FeatureCollection<Geometry, GeoJsonProperties>
@@ -41,27 +42,31 @@ class ModelState {
     reservoirs: FeatureCollection<Geometry, GeoJsonProperties>
     pipes: FeatureCollection<Geometry, GeoJsonProperties>
     epanet_state: EpanetState
-    constructor(epanet_state: EpanetState) {
+    utm_zone: string
+    constructor(epanet_state: EpanetState, utm_zone: string) {
         const { junctions, tanks, reservoirs } = epanet_state.getAllNodesGeoJSON();
-        const pipes = epanet_state.getPipesGeoJSON();
+        const pipes = epanet_state.getPipesGeoJSON(utm_zone);
         this.junctions = junctions;
         this.tanks = tanks;
         this.reservoirs = reservoirs;
         this.pipes = pipes;
         this.epanet_state = epanet_state;
+        this.utm_zone = utm_zone;
     }
     clone() {
-        return new ModelState(this.epanet_state.clone());
+        return new ModelState(this.epanet_state.clone(), this.utm_zone);
     }
 }
 
 export class SyncState {
     local: ModelState
     synced: ModelState
-    constructor() {
-        this.local = new ModelState(new EpanetState());
-        this.synced = new ModelState(new EpanetState());
+    utm_zone: string
+    constructor(utm_zone: string) {
+        this.local = new ModelState(new EpanetState(utm_zone), utm_zone);
+        this.synced = new ModelState(new EpanetState(utm_zone), utm_zone);
         // no rendering, no point for an empty network
+        this.utm_zone = utm_zone;
     }
     applyLocal(action: ClientActionsSchema, map: maplibregl.Map) {
         this.apply("local", action, map);
@@ -88,13 +93,13 @@ export class SyncState {
                     },
                     geometry: {
                         type: "Point",
-                        coordinates: [action.longitude, action.latitude],
+                        coordinates: utmToLongLat([action.x, action.y], this.utm_zone),
                     }
                 });
             } else if (action.type == "add_pipe") {
                 model_state.epanet_state.addPipe(action);
                 // TODO: a little more efficient, just push instead of recalculate
-                model_state.pipes = model_state.epanet_state.getPipesGeoJSON();
+                model_state.pipes = model_state.epanet_state.getPipesGeoJSON(this.utm_zone);
                 // model_state.pipes.features.push({
                 //     type: "Feature",
                 //     properties: {
@@ -118,7 +123,7 @@ export class SyncState {
                     },
                     geometry: {
                         type: "Point",
-                        coordinates: [action.longitude, action.latitude],
+                        coordinates: utmToLongLat([action.x, action.y], this.utm_zone),
                     }
                 });
             } else if (action.type == "add_tank") {
@@ -130,7 +135,7 @@ export class SyncState {
                     },
                     geometry: {
                         type: "Point",
-                        coordinates: [action.longitude, action.latitude],
+                        coordinates: utmToLongLat([action.x, action.y], this.utm_zone),
                     }
                 });
             } else if (action.type == "add_valve") {
@@ -139,10 +144,10 @@ export class SyncState {
                 // When project_init is received, everything gets thrown out and
                 // new objects are created.
                 console.log(action.inp_file);
-                const new_local_epanet_state = EpanetState.fromInp(action.inp_file);
-                const new_synced_epanet_state = EpanetState.fromInp(action.inp_file);
-                const new_local_state = new ModelState(new_local_epanet_state);
-                const new_synced_state = new ModelState(new_synced_epanet_state);
+                const new_local_epanet_state = EpanetState.fromInp(action.inp_file, this.utm_zone);
+                const new_synced_epanet_state = EpanetState.fromInp(action.inp_file, this.utm_zone);
+                const new_local_state = new ModelState(new_local_epanet_state, this.utm_zone);
+                const new_synced_state = new ModelState(new_synced_epanet_state, this.utm_zone);
                 model_state = new_synced_state;
                 this.local = new_local_state;
                 this.synced = new_synced_state;
