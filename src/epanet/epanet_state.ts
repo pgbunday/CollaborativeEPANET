@@ -1,5 +1,5 @@
 import { CountType, FlowUnits, HeadLossType, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
-import type { AddJunctionSchema, AddPipeSchema, AddReservoirSchema, AddTankSchema, PipePropertiesSchema } from "../epanet_types.js";
+import type { AddJunctionSchema, AddPipeSchema, AddReservoirSchema, AddTankSchema, LinkStatus, PipePropertiesSchema } from "../epanet_types.js";
 import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry } from "geojson";
 import { utmToLongLat } from "../coords.js";
 
@@ -229,5 +229,29 @@ export class EpanetState {
         const nodeIdx = this.project.getNodeIndex(nodeId);
         const coords = this.project.getCoordinates(nodeIdx);
         return coords;
+    }
+
+    getPipeProperties(id: string): PipePropertiesSchema {
+        const pipeIdx = this.project.getLinkIndex(id);
+        const diameter = this.project.getLinkValue(pipeIdx, LinkProperty.Diameter);
+        const length = this.project.getLinkValue(pipeIdx, LinkProperty.Length);
+        const initial_status_num = this.project.getLinkValue(pipeIdx, LinkProperty.InitStatus);
+        let initial_status: LinkStatus = "closed";
+        if (initial_status_num == 1) {
+            initial_status = "open";
+        } else {
+            initial_status = "closed";
+        }
+        const roughness = this.project.getLinkValue(pipeIdx, LinkProperty.Roughness);
+        const loss_coefficient = this.project.getLinkValue(pipeIdx, LinkProperty.MinorLoss);
+        return {
+            diameter,
+            id,
+            initial_status,
+            length,
+            loss_coefficient,
+            roughness,
+            type: "pipe_properties",
+        }
     }
 }

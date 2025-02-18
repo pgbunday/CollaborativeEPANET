@@ -33,7 +33,7 @@
 
 import type { Geometry, GeoJsonProperties, FeatureCollection } from "geojson";
 import { EpanetState } from "../epanet/epanet_state.js";
-import type { ClientActionsSchema } from "../epanet_types.js";
+import type { ClientActionsSchema, PipePropertiesSchema } from "../epanet_types.js";
 import { utmToLongLat } from "../coords.js";
 
 class ModelState {
@@ -77,6 +77,9 @@ export class SyncState {
     }
     getNodeCoords(id: string): { x: number, y: number } {
         return this.local.epanet_state.getNodeCoords(id);
+    }
+    getPipeProperties(id: string): PipePropertiesSchema {
+        return this.synced.epanet_state.getPipeProperties(id);
     }
     private apply(model: "local" | "synced", action: ClientActionsSchema, map: maplibregl.Map) {
         // Although inefficient, cloning all state for a backup is the easiest
@@ -151,6 +154,9 @@ export class SyncState {
                 model_state = new_synced_state;
                 this.local = new_local_state;
                 this.synced = new_synced_state;
+            } else if (action.type == "pipe_properties") {
+                // TODO: if storing properties in GeoJSON, also update those
+                model_state.epanet_state.pipeProperties(action);
             }
             this.render(model_state, map);
         } catch (e) {

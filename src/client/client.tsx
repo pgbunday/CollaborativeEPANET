@@ -274,36 +274,38 @@ map.on('load', async (e) => {
         },
         paint: {
             'line-color': '#FF0',
-            'line-width': 3,
+            'line-width': 5,
         }
     });
-    // map.on('click', 'pipes-layer', (e) => {
-    //     const lngLat = e.lngLat;
-    //     if (clickMode == "pan") {
-    //         const popup = createBasePopup(e);
-    //         const feature = e.features![0];
-    //         const id = feature.properties.id;
-    //         // TODO: figure out a decent way of getting the default/existing
-    //         // values for diameter, intial_status, loss_coefficient (MinorLoss),
-    //         // and roughness. Do I store them in GeoJSON properties? Get them
-    //         // all here? idk, something to sleep on until tomorrow.
-    //         render(<PipePropertiesPopup
-    //             diameter={diameter}
-    //             id={id}
-    //             initial_status={initial_status}
-    //             length={length}
-    //             lngLat={lngLat}
-    //             loss_coefficient={loss_coefficient}
-    //             popup={popup}
-    //             project_path={project_path}
-    //             roughness={roughness}
-    //             ws={ws}
-    //         />, popup._content.firstChild);
-    //     }
-    // })
+    map.on('click', 'pipes-layer', (e) => {
+        console.log(e);
+        const lngLat = e.lngLat;
+        if (clickMode == "pan") {
+            const popup = createBasePopup(e);
+            const feature = e.features![0];
+            const id = feature.properties.id;
+            const { diameter, initial_status, length, loss_coefficient, roughness } = syncState.getPipeProperties(id);
+            console.log(syncState.getPipeProperties(id));
+            render(<PipePropertiesPopup
+                diameter={diameter}
+                id={id}
+                initial_status={initial_status}
+                length={length}
+                lngLat={lngLat}
+                loss_coefficient={loss_coefficient}
+                popup={popup}
+                project_path={project_path}
+                roughness={roughness}
+                ws={ws}
+            />, popup._content.firstChild);
+            popup.addTo(map);
+        }
+    })
+
 
     map.on('click', (e) => {
         // Only run events relative to the base map if no other layers caught it
+        console.log('map click');
         if (!e.defaultPrevented) {
             handleMapClick(e);
         }
@@ -334,6 +336,7 @@ function createBasePopup(e: maplibregl.MapMouseEvent & Object): maplibregl.Popup
     return popup;
 }
 function handleMapClick(e: maplibregl.MapMouseEvent & Object) {
+    console.log('inside handleMapClick');
     if (clickMode == "add_junction") {
         const popup = createBasePopup(e);
         // Safety: popup._content.firstChild will be valid because of the

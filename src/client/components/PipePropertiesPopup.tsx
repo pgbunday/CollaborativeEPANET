@@ -1,5 +1,5 @@
 import { useState } from "hono/jsx";
-import type { ClientActionsSchema, LinkStatus } from "../../epanet_types.js";
+import { LinkStatus, type ClientActionsSchema } from "../../epanet_types.js";
 
 export default function PipePropertiesPopup(props: {
     lngLat: maplibregl.LngLat,
@@ -21,6 +21,14 @@ export default function PipePropertiesPopup(props: {
     return <form method="post" action={props.project_path + "/add_tank"} onSubmit={(e) => e.preventDefault()}>
         <input type="number" name="longitude" value={props.lngLat.lng} hidden={true} />
         <input type="number" name="latitude" value={props.lngLat.lat} hidden={true} />
+        <label>Length: <input type="number" name="length" value={props.length} onChange={(e) => { setLength(Number((e.target as HTMLInputElement).value)) }} /></label>
+        <label>Diameter: <input type="number" name="diameter" value={props.diameter} onChange={(e) => { setDiameter(Number((e.target as HTMLInputElement).value)) }} /></label>
+        <label>Roughness: <input type="number" name="roughness" value={props.roughness} onChange={(e) => { setRoughness(Number((e.target as HTMLInputElement).value)) }} /></label>
+        <label>Loss Coefficient: <input type="number" name="lossCoefficient" value={props.loss_coefficient} onChange={(e) => { setLossCoefficient(Number((e.target as HTMLInputElement).value)) }} /></label>
+        <label>Initial Status: <select name="initialStatus" value={props.initial_status} onChange={(e) => { setInitialStatus(LinkStatus.parse((e.target as HTMLInputElement).value)) }}>
+            <option value="open">Open</option>
+            <option value="closed">Closed</option>
+        </select></label>
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const toSend: ClientActionsSchema = {
