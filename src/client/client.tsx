@@ -424,7 +424,7 @@ function ShareModal(props: { dialogRef: RefObject<HTMLDialogElement | null> }) {
         <div>
             <button onClick={() => props.dialogRef.current?.showModal()}>Share</button>
             <dialog class="share-dialog" ref={props.dialogRef}>
-                <label>Username: <input type="text" name="username" onChange={(e) => setUsername(e.target.value)} /></label>
+                <label>Username: <input type="text" name="username" onChange={(e) => setUsername((e.target as HTMLInputElement).value)} /></label>
                 <button type="submit" onClick={async (e) => {
                     const response = await fetch(project_path + '/add_user', {
                         body: JSON.stringify({
