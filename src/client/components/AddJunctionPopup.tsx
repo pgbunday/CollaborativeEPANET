@@ -17,12 +17,8 @@ export default function AddJunctionPopup(props: {
     }}>
         <input type="number" name="lng" value={props.lngLat.lng} hidden={true} />
         <input type="number" name="lat" value={props.lngLat.lat} hidden={true} />
-        {/* The next two inputs have ts-ignore because e.target.value is type
-        checked as undefined, even though it should always be valid. ts-ignore
-        is safe */}
-        <label>ID: <input type="text" name="id" onChange={(e) => { setId(e.target.value); }} /></label>
-        {/* @ts-ignore */}
-        <label>Elevation: <input type="number" name="z" onChange={(e) => setZ(Number(e.target.value))} /></label>
+        <label>ID: <input type="text" name="id" onChange={(e) => { setId((e.target as HTMLInputElement).value); }} /></label>
+        <label>Elevation: <input type="number" name="z" onChange={(e) => setZ(Number((e.target as HTMLInputElement).value))} /></label>
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const utm_coords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);

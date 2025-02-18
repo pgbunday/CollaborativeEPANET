@@ -14,11 +14,7 @@ export default function AddReservoirPopup(props: {
     return <form method="post" action={props.project_path + "/add_reservoir"} onSubmit={(e) => e.preventDefault()}>
         <input type="number" name="longitude" value={props.lngLat.lng} hidden={true} />
         <input type="number" name="latitude" value={props.lngLat.lat} hidden={true} />
-
-        {/* The next input has ts-ignore because e.target.value is type checked
-        as undefined, even though it should always be valid. ts-ignore is safe */}
-        {/* @ts-ignore */}
-        <label>ID: <input type="text" name="id" onChange={(e) => setId(e.target!.value)} /></label>
+        <label>ID: <input type="text" name="id" onChange={(e) => setId((e.target as HTMLInputElement).value)} /></label>
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const utmCoords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);
