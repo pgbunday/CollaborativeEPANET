@@ -163,7 +163,6 @@ export function getProjectByUuid(project_uuid: string): DbProjectSchema | null {
         const project = DbProjectSchema.parse(project_result);
         return project;
     } catch (err) {
-        // console.log(err);
         return null;
     }
 }

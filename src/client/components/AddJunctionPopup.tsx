@@ -1,7 +1,6 @@
 import { useState } from "hono/jsx";
-import type { ClientActionsSchema } from "../../epanet_types.js";
 import { longLatToUtm } from "../../coords.js";
-import type { DbProjectSchema } from "../../db_project.js";
+import type { ServerboundPacket } from "../../packets/serverbound.js";
 
 export default function AddJunctionPopup(props: {
     lngLat: maplibregl.LngLat,
@@ -22,12 +21,14 @@ export default function AddJunctionPopup(props: {
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const utm_coords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);
-            const toSend: ClientActionsSchema = {
-                type: "add_junction",
-                id,
-                x: utm_coords[0],
-                y: utm_coords[1],
-                elevation: z,
+            const toSend: ServerboundPacket = {
+                type: "add_junction_sb",
+                data: {
+                    id,
+                    x: utm_coords[0],
+                    y: utm_coords[1],
+                    elevation: z,
+                }
             }
             props.ws.send(JSON.stringify(toSend));
             props.popup.remove();

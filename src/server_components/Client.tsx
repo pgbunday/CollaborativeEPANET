@@ -1,6 +1,12 @@
 import Layout from "./Layout.js";
 
-export default function Client(props) {
+export default function Client(props: {
+    lng: number,
+    lat: number,
+    zoom: number,
+    project_name: string,
+    utm_zone: string,
+}) {
     return <Layout title='Map' loggedIn={true} head={<link rel="stylesheet" href="/static/client.css" />}>
         <meta name="map-center-lng" value={props.lng} />
         <meta name="map-center-lat" value={props.lat} />

@@ -5,7 +5,6 @@ import "./client.css"
 import { render, useRef, useState, type RefObject } from 'hono/jsx/dom';
 import { GeocodingControl } from '@maptiler/geocoding-control/maplibregl';
 import '@maptiler/geocoding-control/style.css';
-import { EpanetChangeSchema, type ClientActionsSchema } from '../epanet_types.js';
 import { z } from 'zod';
 import { SyncState } from './sync.js';
 import AddJunctionPopup from './components/AddJunctionPopup.js';
@@ -14,9 +13,10 @@ import proj4 from 'proj4';
 import AddTankPopup from './components/AddTankPopup.js';
 import PipePropertiesPopup from './components/PipePropertiesPopup.js';
 import { longLatToUtm } from '../coords.js';
+import { ClientboundPacket } from '../packets/clientbound.js';
+import type { ServerboundPacket } from '../packets/serverbound.js';
 
 proj4.defs('utm15n', '+proj=utm +zone=15 +datum=WGS84 +units=m +no_defs +type=crs');
-console.log(proj4('EPSG:4326', 'utm15n', [-90.8889, 14.7416]));
 
 const metaLatitude = document.querySelector('meta[name="map-center-lat"]')?.getAttribute('value');
 const metaLongitude = document.querySelector('meta[name="map-center-lng"]')?.getAttribute('value');
@@ -54,6 +54,8 @@ ws.onmessage = (e) => {
     noMessageHandlerQueue.push(e.data);
 }
 
+const glyphsUrl = new URL(window.location.href);
+glyphsUrl.pathname = '/';
 const map = new maplibregl.Map({
     container: 'map',
     center: [Number(metaLongitude), Number(metaLatitude)],
@@ -66,6 +68,7 @@ const map = new maplibregl.Map({
                 attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
                 tiles: ['/tiles/satellite/{z}/{x}/{y}.jpg'],
                 tileSize: 512,
+                maxzoom: 18,
             }
         },
         layers: [
@@ -75,9 +78,9 @@ const map = new maplibregl.Map({
                 type: 'raster',
             }
         ],
+        glyphs: glyphsUrl.href + 'font/{fontstack}/{range}.pbf',
     },
 });
-
 // TODO: if using icons from iconoir, also change color?
 // But most likely, do a bit of drawing to make my own. Scrap this stuff.
 async function renderSvgData(embed_url: string, width: number, height: number): Promise<ImageBitmap> {
@@ -94,7 +97,6 @@ async function renderSvgData(embed_url: string, width: number, height: number): 
     const biggerSvgText = div.innerHTML;
     const biggerSvgBase64 = btoa(biggerSvgText);
     const biggerDataUrl = `data:image/svg+xml;base64,${biggerSvgBase64}`;
-    console.log('biggerDataUrl:', biggerDataUrl);
     const elem = new Image();
     elem.src = biggerDataUrl;
     return await new Promise((resolve) => {
@@ -164,7 +166,6 @@ map.on('load', async (e) => {
         switch (clickMode) {
             case "add_pipe":
                 try {
-                    //
                     if (addPipeState.start_id == '') {
                         addPipeState.start(e.features[0].properties.id);
                     } else {
@@ -173,7 +174,6 @@ map.on('load', async (e) => {
                         for (const latLng of addPipeState.intermediate_coordinates) {
                             const utmCoords = longLatToUtm([latLng.longitude, latLng.latitude], utm_zone);
                             vertices.push({ x: utmCoords[0], y: utmCoords[1] });
-                            // vertices.push({ x: latLng.longitude, y: latLng.latitude });
                         }
                         // Auto length algorithm: either find the distance between start and finish,
                         // or start and first intermediate, plus last intermediate and finish, plus
@@ -205,15 +205,16 @@ map.on('load', async (e) => {
                                 length += Math.sqrt(xDiff * xDiff + yDiff * yDiff);
                             }
                         }
-                        const toSend: ClientActionsSchema = {
-                            type: "add_pipe",
-                            start_node: addPipeState.start_id,
-                            end_node: addPipeState.end_id,
-                            vertices,
-                            length,
-                            id: 'Pipe' + Math.random(),
+                        const toSend: ServerboundPacket = {
+                            type: "add_pipe_sb",
+                            data: {
+                                start_node: addPipeState.start_id,
+                                end_node: addPipeState.end_id,
+                                vertices,
+                                length,
+                                id: 'Pipe' + Math.random(),
+                            }
                         };
-                        syncState.applyLocal(toSend, map);
                         addPipeState = new AddPipeState('');
                         ws.send(JSON.stringify(toSend));
                     }
@@ -226,6 +227,35 @@ map.on('load', async (e) => {
                 break;
         }
     });
+
+    const cursorDataUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHN0cm9rZS13aWR0aD0iMS41IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIGNvbG9yPSIjMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTIwLjg2NyA4LjI4N2MxLjYuNjUgMS40NzcgMi45NTQtLjE4MiAzLjQzbC04LjM3MiAyLjQwOEw4LjQ5IDIxLjk1Yy0uNzU4IDEuNTUyLTMuMDQ5IDEuMjcyLTMuNDEtLjQxNkwxLjE4MSAzLjM1N0MuODc2IDEuOTMxIDIuMjkuNzQzIDMuNjQyIDEuMjkyWiIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjEuOTkyIi8+PC9zdmc+Cg==';
+    const cursorBitmap = await renderSvgData(cursorDataUrl, 256, 256);
+    map.addImage('cursor', cursorBitmap);
+    map.addSource('cursors-source', {
+        type: 'geojson',
+        data: {
+            type: "FeatureCollection",
+            features: [],
+        },
+        cluster: false,
+    });
+    map.addLayer({
+        id: 'cursors-layer',
+        type: 'symbol',
+        source: 'cursors-source',
+        layout: {
+            'icon-image': 'cursor',
+            'icon-size': 0.25,
+            'icon-allow-overlap': true,
+            'icon-offset': [0.25 * 256, 0.25 * 256],
+            'text-field': ['get', 'username'],
+            'text-anchor': 'top',
+            'text-allow-overlap': true,
+        },
+        paint: {
+            'text-color': '#FFFFFF',
+        }
+    })
 
     map.addSource('tanks-source', {
         type: "geojson",
@@ -278,14 +308,12 @@ map.on('load', async (e) => {
         }
     });
     map.on('click', 'pipes-layer', (e) => {
-        console.log(e);
         const lngLat = e.lngLat;
         if (clickMode == "pan") {
             const popup = createBasePopup(e);
             const feature = e.features![0];
             const id = feature.properties.id;
             const { diameter, initial_status, length, loss_coefficient, roughness } = syncState.getPipeProperties(id);
-            console.log(syncState.getPipeProperties(id));
             render(<PipePropertiesPopup
                 diameter={diameter}
                 id={id}
@@ -297,6 +325,8 @@ map.on('load', async (e) => {
                 project_path={project_path}
                 roughness={roughness}
                 ws={ws}
+            // Safety: setHTML() in createBasePopup() ensures that firstChild is valid
+            // @ts-ignore
             />, popup._content.firstChild);
             popup.addTo(map);
         }
@@ -305,21 +335,29 @@ map.on('load', async (e) => {
 
     map.on('click', (e) => {
         // Only run events relative to the base map if no other layers caught it
-        console.log('map click');
         if (!e.defaultPrevented) {
             handleMapClick(e);
         }
         return;
     });
 
+    map.on('mousemove', (e) => {
+        const msg: ServerboundPacket = {
+            type: 'mouse_move_sb',
+            longitude: e.lngLat.lng,
+            latitude: e.lngLat.lat,
+        };
+        const msg_str = JSON.stringify(msg);
+        ws.send(msg_str);
+    })
+
     // Finally, handle messages that were received before the map was
     // initialized, and set up a handler for future messages
     function handleIncomingMessage(data: any) {
         const str = z.string().parse(data);
         const obj = JSON.parse(str);
-        const changeData = EpanetChangeSchema.parse(obj);
-        const change = changeData.change;
-        syncState.applySynced(change, map);
+        const changeData = ClientboundPacket.parse(obj);
+        syncState.applySynced(changeData, map);
     }
     for (const unhandled of noMessageHandlerQueue) {
         handleIncomingMessage(unhandled);
@@ -336,7 +374,6 @@ function createBasePopup(e: maplibregl.MapMouseEvent & Object): maplibregl.Popup
     return popup;
 }
 function handleMapClick(e: maplibregl.MapMouseEvent & Object) {
-    console.log('inside handleMapClick');
     if (clickMode == "add_junction") {
         const popup = createBasePopup(e);
         // Safety: popup._content.firstChild will be valid because of the

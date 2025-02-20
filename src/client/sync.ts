@@ -33,8 +33,11 @@
 
 import type { Geometry, GeoJsonProperties, FeatureCollection } from "geojson";
 import { EpanetState } from "../epanet/epanet_state.js";
-import type { ClientActionsSchema, PipePropertiesSchema } from "../epanet_types.js";
 import { utmToLongLat } from "../coords.js";
+import type { ClientboundPacket } from "../packets/clientbound.js";
+import type { PipePropertiesData } from "../packets/common.js";
+import { handleMouseMovePacket } from "./cursors.js";
+import type { GeoJSONSource } from "maplibre-gl";
 
 class ModelState {
     junctions: FeatureCollection<Geometry, GeoJsonProperties>
@@ -68,39 +71,43 @@ export class SyncState {
         // no rendering, no point for an empty network
         this.utm_zone = utm_zone;
     }
-    applyLocal(action: ClientActionsSchema, map: maplibregl.Map) {
+    applyLocal(action: ClientboundPacket, map: maplibregl.Map) {
         this.apply("local", action, map);
     }
-    applySynced(action: ClientActionsSchema, map: maplibregl.Map) {
+    applySynced(action: ClientboundPacket, map: maplibregl.Map) {
         this.apply("synced", action, map);
-        this.local = this.synced.clone();
     }
     getNodeCoords(id: string): { x: number, y: number } {
         return this.local.epanet_state.getNodeCoords(id);
     }
-    getPipeProperties(id: string): PipePropertiesSchema {
+    getPipeProperties(id: string): PipePropertiesData {
         return this.synced.epanet_state.getPipeProperties(id);
     }
-    private apply(model: "local" | "synced", action: ClientActionsSchema, map: maplibregl.Map) {
+    private apply(model: "local" | "synced", action: ClientboundPacket, map: maplibregl.Map) {
+        let model_state = model == "local" ? this.local : this.synced;
+        // special case for mouse move, don't clone and re-render everything
+        if (action.type == "mouse_move_cb") {
+            handleMouseMovePacket(action, map);
+            return;
+        }
         // Although inefficient, cloning all state for a backup is the easiest
         // thing I can think of to have consistent state.
-        let model_state = model == "local" ? this.local : this.synced;
         const backup = model_state.clone();
         try {
-            if (action.type == "add_junction") {
-                model_state.epanet_state.addJunction(action);
+            if (action.type == "add_junction_cb") {
+                model_state.epanet_state.addJunction(action.data);
                 model_state.junctions.features.push({
                     type: "Feature",
                     properties: {
-                        id: action.id,
+                        id: action.data.id,
                     },
                     geometry: {
                         type: "Point",
-                        coordinates: utmToLongLat([action.x, action.y], this.utm_zone),
+                        coordinates: utmToLongLat([action.data.x, action.data.y], this.utm_zone),
                     }
                 });
-            } else if (action.type == "add_pipe") {
-                model_state.epanet_state.addPipe(action);
+            } else if (action.type == "add_pipe_cb") {
+                model_state.epanet_state.addPipe(action.data);
                 // TODO: a little more efficient, just push instead of recalculate
                 model_state.pipes = model_state.epanet_state.getPipesGeoJSON(this.utm_zone);
                 // model_state.pipes.features.push({
@@ -115,38 +122,33 @@ export class SyncState {
                 //         ]
                 //     }
                 // })
-            } else if (action.type == "add_pump") {
-                // TODO
-            } else if (action.type == "add_reservoir") {
-                model_state.epanet_state.addReservoir(action);
+            } else if (action.type == "add_reservoir_cb") {
+                model_state.epanet_state.addReservoir(action.data);
                 model_state.reservoirs.features.push({
                     type: "Feature",
                     properties: {
-                        id: action.id,
+                        id: action.data.id,
                     },
                     geometry: {
                         type: "Point",
-                        coordinates: utmToLongLat([action.x, action.y], this.utm_zone),
+                        coordinates: utmToLongLat([action.data.x, action.data.y], this.utm_zone),
                     }
                 });
-            } else if (action.type == "add_tank") {
-                model_state.epanet_state.addTank(action);
+            } else if (action.type == "add_tank_cb") {
+                model_state.epanet_state.addTank(action.data);
                 model_state.tanks.features.push({
                     type: "Feature",
                     properties: {
-                        id: action.id,
+                        id: action.data.id,
                     },
                     geometry: {
                         type: "Point",
-                        coordinates: utmToLongLat([action.x, action.y], this.utm_zone),
+                        coordinates: utmToLongLat([action.data.x, action.data.y], this.utm_zone),
                     }
                 });
-            } else if (action.type == "add_valve") {
-                // TODO
-            } else if (action.type == "project_init") {
+            } else if (action.type == "project_info_cb") {
                 // When project_init is received, everything gets thrown out and
                 // new objects are created.
-                console.log(action.inp_file);
                 const new_local_epanet_state = EpanetState.fromInp(action.inp_file, this.utm_zone);
                 const new_synced_epanet_state = EpanetState.fromInp(action.inp_file, this.utm_zone);
                 const new_local_state = new ModelState(new_local_epanet_state, this.utm_zone);
@@ -154,9 +156,13 @@ export class SyncState {
                 model_state = new_synced_state;
                 this.local = new_local_state;
                 this.synced = new_synced_state;
-            } else if (action.type == "pipe_properties") {
+            } else if (action.type == "pipe_properties_cb") {
                 // TODO: if storing properties in GeoJSON, also update those
-                model_state.epanet_state.pipeProperties(action);
+                model_state.epanet_state.pipeProperties(action.data);
+            } else if (action.type == "delete_pipe_cb") {
+                model_state.epanet_state.deletePipe(action.id);
+                // TODO: is there a way to efficiently remove one pipe from the GeoJSON?
+                model_state.pipes = model_state.epanet_state.getPipesGeoJSON(this.utm_zone);
             }
             this.render(model_state, map);
         } catch (e) {
@@ -170,29 +176,28 @@ export class SyncState {
                 this.render(this.synced, map);
             }
         }
+        if (model == "synced") {
+            this.local = this.synced.clone();
+        }
     }
     private render(model_state: ModelState, map: maplibregl.Map) {
         const junctionsSource = map.getSource('junctions-source');
         if (junctionsSource) {
-            // @ts-ignore
-            junctionsSource.setData(model_state.junctions);
+            (junctionsSource as GeoJSONSource).setData(model_state.junctions);
         }
         const tanksSource = map.getSource('tanks-source');
         if (tanksSource) {
-            // @ts-ignore
-            tanksSource.setData(model_state.tanks);
+            (tanksSource as GeoJSONSource).setData(model_state.tanks);
         }
         const reservoirsSource = map.getSource('reservoirs-source');
         if (reservoirsSource) {
-            // @ts-ignore
-            reservoirsSource.setData(model_state.reservoirs);
+            (reservoirsSource as GeoJSONSource).setData(model_state.reservoirs);
         }
 
         // TODO: instead of just pipes, also handle other LinkType values
         const pipesSource = map.getSource('pipes-source');
         if (pipesSource) {
-            // @ts-ignore
-            pipesSource.setData(model_state.pipes);
+            (pipesSource as GeoJSONSource).setData(model_state.pipes);
         }
     }
 }

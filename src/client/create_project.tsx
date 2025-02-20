@@ -38,18 +38,18 @@ function Toolbar() {
     return <>
         <a href="/projects">Back</a>
         <form method="post" action="/create_project" onSubmit={(e) => {
-            const longitude = document.getElementById('longitude')!;
-            const latitude = document.getElementById('latitude')!;
-            const zoom = document.getElementById('zoom')!;
-            longitude.value = map.getCenter().lng;
-            latitude.value = map.getCenter().lat;
-            zoom.value = map.getZoom();
+            const longitude = document.getElementById('longitude') as HTMLInputElement;
+            const latitude = document.getElementById('latitude') as HTMLInputElement;
+            const zoom = document.getElementById('zoom') as HTMLInputElement;
+            longitude.value = String(map.getCenter().lng);
+            latitude.value = String(map.getCenter().lat);
+            zoom.value = String(map.getZoom());
         }}>
             <input id="longitude" name="longitude" hidden={true} />
             <input id="latitude" name="latitude" hidden={true} />
             <input id="zoom" name="zoom" hidden={true} />
             <label>Name: <input type="text" name="name" id="project-name" onChange={(e) => {
-                setProjectName(e.target.value);
+                setProjectName((e.target as HTMLInputElement).value);
             }} /></label>
             <button type="submit">Create</button>
         </form>

@@ -80,7 +80,6 @@ app.post('/login', async (c) => {
   username = username.toString();
   password = password.toString();
   const dbUser = await getUserByUsernamePassword(username, password);
-  console.log('dbUser:', dbUser);
   if (dbUser && dbUser.auth_token) {
     setCookie(c, 'auth_token', dbUser.auth_token)
     return c.redirect('/projects');
@@ -155,6 +154,10 @@ app.get('/static/create_project.css', async (c) => {
   return await serveFile(c, 'build-client/create_project.css', 'text/css');
 })
 
+app.get('/font/:fontstack/:range_pbf', async (c) => {
+  return await serveFile(c, 'static/demotiles/font/' + c.req.param().fontstack + '/' + c.req.param().range_pbf, 'font/woff2');
+})
+
 // Caching layer for satellite tiles. Reduces API key use substantially when
 // constantly refreshing a project page in development.
 app.get('/tiles/satellite/:z/:x/:y_jpg', async (c) => {
@@ -172,9 +175,7 @@ app.get('/tiles/satellite/:z/:x/:y_jpg', async (c) => {
   } catch (err) {
     // readFile failed, so fetch from origin
     try {
-      console.log('readFile failed');
       const response = await fetch(`https://api.maptiler.com/tiles/satellite-v2/${zoomString}/${x}/${y_jpg}?key=${process.env.MAPTILER_API_KEY}`);
-      console.log('response:', response);
       const data = await response.bytes();
       await mkdir(`static/tiles/satellite/${zoomString}/${x}`, { recursive: true });
       await writeFile(`static/tiles/satellite/${zoomString}/${x}/${y_jpg}`, data);
@@ -199,28 +200,3 @@ const server = serve({
   port,
 });
 injectWebSocket(server);
-
-// app.get('/tiles/planet_z12.pmtiles', async (c) => {
-//   const range = c.req.header('Range');
-//   if (range) {
-//     const replaced = range.replace('bytes=', '');
-//     const [low_str, high_str] = replaced.split('-');
-//     const low = parseInt(low_str, 10);
-//     const high = parseInt(high_str, 10);
-//     // https://2ality.com/2018/04/async-iter-nodejs.html#reading-asynchronously-via-async-iteration
-//     const file_stat = await stat('tmp_tiles/planet_z12.pmtiles');
-//     const total_size = file_stat.size;
-//     const readStream = createReadStream('tmp_tiles/planet_z12.pmtiles', {
-//       start: low,
-//       end: high,
-//     });
-//     const chunks = [];
-//     for await (const chunk of readStream) {
-//       chunks.push(chunk);
-//     }
-//     c.header('Content-Type', 'application/octet-stream');
-//     c.header('Content-Range', `bytes ${low}-${high}/${total_size}`);
-//     return c.body(await new Blob(chunks).arrayBuffer());
-//   }
-//   console.log(c.req.header());
-// })

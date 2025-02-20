@@ -1,6 +1,6 @@
 import { useState } from "hono/jsx";
-import type { ClientActionsSchema } from "../../epanet_types.js";
 import { longLatToUtm } from "../../coords.js";
+import type { ServerboundPacket } from "../../packets/serverbound.js";
 
 export default function AddTankPopup(props: {
     lngLat: maplibregl.LngLat,
@@ -19,15 +19,16 @@ export default function AddTankPopup(props: {
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const utmCoords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);
-            const toSend: ClientActionsSchema = {
-                type: "add_tank",
-                id,
-                x: utmCoords[0],
-                y: utmCoords[1],
-                elevation,
+            const toSend: ServerboundPacket = {
+                type: "add_tank_sb",
+                data: {
+                    id,
+                    x: utmCoords[0],
+                    y: utmCoords[1],
+                    elevation,
+                }
             };
             props.ws.send(JSON.stringify(toSend));
-            console.log('Sent add_tank');
             props.popup.remove();
         }}>Create</button>
     </form>

@@ -3,7 +3,7 @@
 # One tile cache
 /tmp_tiles
 # Another tile cache
-/static
+/static/tiles
 # Client builds
 /build-client
 

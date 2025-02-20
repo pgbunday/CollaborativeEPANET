@@ -1,6 +1,6 @@
 import { useState } from "hono/jsx";
-import type { ClientActionsSchema } from "../../epanet_types.js";
 import { longLatToUtm } from "../../coords.js";
+import type { ServerboundPacket } from "../../packets/serverbound.js";
 
 export default function AddReservoirPopup(props: {
     lngLat: maplibregl.LngLat,
@@ -18,14 +18,15 @@ export default function AddReservoirPopup(props: {
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const utmCoords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);
-            const toSend: ClientActionsSchema = {
-                type: "add_reservoir",
-                id,
-                x: utmCoords[0],
-                y: utmCoords[1],
+            const toSend: ServerboundPacket = {
+                type: "add_reservoir_sb",
+                data: {
+                    id,
+                    x: utmCoords[0],
+                    y: utmCoords[1],
+                }
             };
             props.ws.send(JSON.stringify(toSend));
-            console.log('Sent add_reservoir');
             props.popup.remove();
         }}>Create</button>
     </form>

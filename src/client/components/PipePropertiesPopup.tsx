@@ -1,5 +1,6 @@
 import { useState } from "hono/jsx";
-import { LinkStatus, type ClientActionsSchema } from "../../epanet_types.js";
+import { LinkStatus } from "../../packets/common.js";
+import type { ServerboundPacket } from "../../packets/serverbound.js";
 
 export default function PipePropertiesPopup(props: {
     lngLat: maplibregl.LngLat,
@@ -25,24 +26,36 @@ export default function PipePropertiesPopup(props: {
         <label>Diameter: <input type="number" name="diameter" value={props.diameter} onChange={(e) => { setDiameter(Number((e.target as HTMLInputElement).value)) }} /></label>
         <label>Roughness: <input type="number" name="roughness" value={props.roughness} onChange={(e) => { setRoughness(Number((e.target as HTMLInputElement).value)) }} /></label>
         <label>Loss Coefficient: <input type="number" name="lossCoefficient" value={props.loss_coefficient} onChange={(e) => { setLossCoefficient(Number((e.target as HTMLInputElement).value)) }} /></label>
+        {/* TODO:  display the actual default, not just always Open */}
         <label>Initial Status: <select name="initialStatus" value={props.initial_status} onChange={(e) => { setInitialStatus(LinkStatus.parse((e.target as HTMLInputElement).value)) }}>
             <option value="open">Open</option>
             <option value="closed">Closed</option>
         </select></label>
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
-            const toSend: ClientActionsSchema = {
-                type: "pipe_properties",
-                id: props.id,
-                diameter,
-                initial_status: initialStatus,
-                length,
-                loss_coefficient: lossCoefficient,
-                roughness,
+            const toSend: ServerboundPacket = {
+                type: "pipe_properties_sb",
+                data: {
+                    old_id: props.id,
+                    new_id: props.id,
+                    diameter,
+                    initial_status: initialStatus,
+                    length,
+                    loss_coefficient: lossCoefficient,
+                    roughness,
+                }
             };
             props.ws.send(JSON.stringify(toSend));
-            console.log('Sent add_tank');
             props.popup.remove();
-        }}>Create</button>
+        }}>Update</button>
+        <button type="submit" onClick={async (e) => {
+            e.preventDefault();
+            const toSend: ServerboundPacket = {
+                type: "delete_pipe_sb",
+                id: props.id,
+            };
+            props.ws.send(JSON.stringify(toSend));
+            props.popup.remove();
+        }}>Delete</button>
     </form>
 }

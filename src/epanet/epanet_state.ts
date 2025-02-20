@@ -1,7 +1,7 @@
-import { CountType, FlowUnits, HeadLossType, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
-import type { AddJunctionSchema, AddPipeSchema, AddReservoirSchema, AddTankSchema, LinkStatus, PipePropertiesSchema } from "../epanet_types.js";
+import { ActionCodeType, CountType, FlowUnits, HeadLossType, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
 import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry } from "geojson";
 import { utmToLongLat } from "../coords.js";
+import type { AddJunctionData, AddPipeData, AddReservoirData, AddTankData, LinkStatus, PipePropertiesData } from "../packets/common.js";
 
 const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
@@ -68,7 +68,7 @@ export class EpanetState {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the junction
      */
-    addJunction(data: AddJunctionSchema) {
+    addJunction(data: AddJunctionData) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Junction);
         this.project.setNodeValue(nodeIndex, NodeProperty.Elevation, data.elevation);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
@@ -80,7 +80,7 @@ export class EpanetState {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the reservoir
      */
-    addReservoir(data: AddReservoirSchema) {
+    addReservoir(data: AddReservoirData) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Reservoir);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
     }
@@ -91,7 +91,7 @@ export class EpanetState {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the tank
      */
-    addTank(data: AddTankSchema) {
+    addTank(data: AddTankData) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Tank);
         this.project.setNodeValue(nodeIndex, NodeProperty.Elevation, data.elevation);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
@@ -103,7 +103,7 @@ export class EpanetState {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the pipe
      */
-    addPipe(data: AddPipeSchema) {
+    addPipe(data: AddPipeData) {
         const pipeIdx = this.project.addLink(data.id, LinkType.Pipe, data.start_node, data.end_node);
         this.project.setLinkValue(pipeIdx, LinkProperty.Length, data.length);
         if (data.vertices.length != 0) {
@@ -117,8 +117,8 @@ export class EpanetState {
         }
     }
 
-    pipeProperties(data: PipePropertiesSchema) {
-        const pipeIdx = this.project.getLinkIndex(data.id);
+    pipeProperties(data: PipePropertiesData) {
+        const pipeIdx = this.project.getLinkIndex(data.old_id);
         this.project.setLinkValue(pipeIdx, LinkProperty.Diameter, data.diameter);
         this.project.setLinkValue(pipeIdx, LinkProperty.Length, data.length);
         if (data.initial_status == "open") {
@@ -231,7 +231,7 @@ export class EpanetState {
         return coords;
     }
 
-    getPipeProperties(id: string): PipePropertiesSchema {
+    getPipeProperties(id: string): PipePropertiesData {
         const pipeIdx = this.project.getLinkIndex(id);
         const diameter = this.project.getLinkValue(pipeIdx, LinkProperty.Diameter);
         const length = this.project.getLinkValue(pipeIdx, LinkProperty.Length);
@@ -246,12 +246,17 @@ export class EpanetState {
         const loss_coefficient = this.project.getLinkValue(pipeIdx, LinkProperty.MinorLoss);
         return {
             diameter,
-            id,
+            old_id: id,
+            new_id: id,
             initial_status,
             length,
             loss_coefficient,
             roughness,
-            type: "pipe_properties",
         }
+    }
+
+    deletePipe(id: string) {
+        const pipeIdx = this.project.getLinkIndex(id);
+        this.project.deleteLink(pipeIdx, ActionCodeType.Conditional);
     }
 }

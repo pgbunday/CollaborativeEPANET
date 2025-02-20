@@ -1,3 +1,6 @@
 [submodule "vendor/epanet-js"]
 	path = vendor/epanet-js
 	url = https://github.com/modelcreate/epanet-js
+[submodule "static/demotiles"]
+	path = static/demotiles
+	url = https://github.com/maplibre/demotiles
