@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AddJunctionData, AddPipeData, AddReservoirData, AddTankData, LinkStatus, PipePropertiesData, TankPropertiesData } from "./common.js";
+import { AddJunctionData, AddPipeData, AddReservoirData, AddTankData, JunctionPropertiesData, LinkStatus, PipePropertiesData, TankPropertiesData } from "./common.js";
 
 export const AddJunctionSb = z.object({
     type: z.literal('add_junction_sb'),
@@ -57,6 +57,17 @@ export const DeletePipeSb = z.object({
 });
 export type DeletePipeSb = z.infer<typeof DeletePipeSb>;
 
+export const JunctionPropertiesSb = z.object({
+    type: z.literal('junction_properties_sb'),
+    data: JunctionPropertiesData,
+})
+export type JunctionPropertiesSb = z.infer<typeof JunctionPropertiesSb>;
+
+export const DeleteJunctionSb = z.object({
+    type: z.literal('delete_junction_sb'),
+    id: z.string(),
+})
+
 export const ServerboundPacket = z.discriminatedUnion('type', [
     AddJunctionSb,
     AddReservoirSb,
@@ -67,5 +78,7 @@ export const ServerboundPacket = z.discriminatedUnion('type', [
     PipePropertiesSb,
     MouseMoveSb,
     DeletePipeSb,
+    JunctionPropertiesSb,
+    DeleteJunctionSb,
 ]);
 export type ServerboundPacket = z.infer<typeof ServerboundPacket>;

@@ -15,6 +15,7 @@ import PipePropertiesPopup from './components/PipePropertiesPopup.js';
 import { longLatToUtm } from '../coords.js';
 import { ClientboundPacket } from '../packets/clientbound.js';
 import type { ServerboundPacket } from '../packets/serverbound.js';
+import JunctionPropertiesPopup from './components/JunctionPropertiesPopup.js';
 
 proj4.defs('utm15n', '+proj=utm +zone=15 +datum=WGS84 +units=m +no_defs +type=crs');
 
@@ -222,6 +223,26 @@ map.on('load', async (e) => {
                     console.log(e);
                 }
                 break;
+            case "pan": {
+                console.log('should be showing a popup...');
+                const lngLat = e.lngLat;
+                const popup = createBasePopup(e);
+                const feature = e.features![0];
+                const id = feature.properties.id;
+                const { elevation } = syncState.getJunctionProperties(id);
+                render(<JunctionPropertiesPopup
+                    elevation={elevation}
+                    id={id}
+                    lngLat={lngLat}
+                    popup={popup}
+                    project_path={project_path}
+                    ws={ws}
+                // Safety: setHTML() in createBasePopup() ensures that firstChild is valid
+                // @ts-ignore
+                />, popup._content.firstChild);
+                popup.addTo(map);
+                break;
+            }
             default:
                 console.log('WARNING: unhandled clickMode for junctions-layer:', clickMode);
                 break;

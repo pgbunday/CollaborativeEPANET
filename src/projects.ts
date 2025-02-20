@@ -160,6 +160,18 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, user: DbU
                             type: "delete_pipe_cb",
                             id: packet.id,
                         }
+                    } else if (packet.type == "junction_properties_sb") {
+                        state.epanet.junctionProperties(packet.data);
+                        resp = {
+                            type: 'junction_properties_cb',
+                            data: packet.data,
+                        };
+                    } else if(packet.type == 'delete_junction_sb') {
+                        state.epanet.deleteJunction(packet.id);
+                        resp = {
+                            type: 'delete_junction_cb',
+                            id: packet.id,
+                        };
                     }
                     // notify all clients of the change
                     state.broadcast(resp);

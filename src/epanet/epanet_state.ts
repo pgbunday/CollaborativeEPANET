@@ -1,7 +1,7 @@
 import { ActionCodeType, CountType, FlowUnits, HeadLossType, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
 import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry } from "geojson";
 import { utmToLongLat } from "../coords.js";
-import type { AddJunctionData, AddPipeData, AddReservoirData, AddTankData, LinkStatus, PipePropertiesData } from "../packets/common.js";
+import type { AddJunctionData, AddPipeData, AddReservoirData, AddTankData, JunctionPropertiesData, LinkStatus, PipePropertiesData } from "../packets/common.js";
 
 const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
@@ -128,6 +128,11 @@ export class EpanetState {
         }
         this.project.setLinkValue(pipeIdx, LinkProperty.Roughness, data.roughness);
         this.project.setLinkValue(pipeIdx, LinkProperty.MinorLoss, data.loss_coefficient);
+    }
+
+    junctionProperties(data: JunctionPropertiesData) {
+        const junctionIdx = this.project.getNodeIndex(data.old_id);
+        this.project.setNodeValue(junctionIdx, NodeProperty.Elevation, data.elevation);
     }
 
     getAllNodesGeoJSON(): {
@@ -258,5 +263,20 @@ export class EpanetState {
     deletePipe(id: string) {
         const pipeIdx = this.project.getLinkIndex(id);
         this.project.deleteLink(pipeIdx, ActionCodeType.Conditional);
+    }
+
+    getJunctionProperties(id: string): JunctionPropertiesData {
+        const junctionIdx = this.project.getNodeIndex(id);
+        const elevation = this.project.getNodeValue(junctionIdx, NodeProperty.Elevation);
+        return {
+            elevation,
+            new_id: id,
+            old_id: id,
+        }
+    }
+
+    deleteJunction(id: string) {
+        const junctionIdx = this.project.getNodeIndex(id);
+        this.project.deleteNode(junctionIdx, ActionCodeType.Conditional);
     }
 }

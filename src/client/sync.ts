@@ -35,7 +35,7 @@ import type { Geometry, GeoJsonProperties, FeatureCollection } from "geojson";
 import { EpanetState } from "../epanet/epanet_state.js";
 import { utmToLongLat } from "../coords.js";
 import type { ClientboundPacket } from "../packets/clientbound.js";
-import type { PipePropertiesData } from "../packets/common.js";
+import type { JunctionPropertiesData, PipePropertiesData } from "../packets/common.js";
 import { handleMouseMovePacket } from "./cursors.js";
 import type { GeoJSONSource } from "maplibre-gl";
 
@@ -82,6 +82,9 @@ export class SyncState {
     }
     getPipeProperties(id: string): PipePropertiesData {
         return this.synced.epanet_state.getPipeProperties(id);
+    }
+    getJunctionProperties(id: string): JunctionPropertiesData {
+        return this.synced.epanet_state.getJunctionProperties(id);
     }
     private apply(model: "local" | "synced", action: ClientboundPacket, map: maplibregl.Map) {
         let model_state = model == "local" ? this.local : this.synced;
@@ -163,6 +166,11 @@ export class SyncState {
                 model_state.epanet_state.deletePipe(action.id);
                 // TODO: is there a way to efficiently remove one pipe from the GeoJSON?
                 model_state.pipes = model_state.epanet_state.getPipesGeoJSON(this.utm_zone);
+            } else if (action.type == "junction_properties_cb") {
+                model_state.epanet_state.junctionProperties(action.data);
+            } else if (action.type == "delete_junction_cb") {
+                model_state.epanet_state.deleteJunction(action.id);
+                model_state.junctions = model_state.epanet_state.getAllNodesGeoJSON().junctions;
             }
             this.render(model_state, map);
         } catch (e) {

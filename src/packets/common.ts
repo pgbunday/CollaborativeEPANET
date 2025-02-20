@@ -70,3 +70,10 @@ export const PipePropertiesData = z.object({
     initial_status: LinkStatus,
 });
 export type PipePropertiesData = z.infer<typeof PipePropertiesData>;
+
+export const JunctionPropertiesData = z.object({
+    old_id: z.string(),
+    new_id: z.string(),
+    elevation: z.number(),
+});
+export type JunctionPropertiesData = z.infer<typeof JunctionPropertiesData>;
