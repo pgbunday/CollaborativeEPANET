@@ -3,7 +3,7 @@ import { getDb } from "./db.js";
 import { randomUUID } from "crypto";
 import type { DbUserSchema } from "./auth.js";
 import { FlowUnits, HeadLossType, Project, Workspace } from "epanet-js";
-import { getUtmZone } from "./coords.js";
+import { getUtmZone } from "../coords.js";
 
 export const DbProjectSchema = z.object({
     uuid: z.string(),

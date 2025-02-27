@@ -1,5 +1,4 @@
 import proj4 from "proj4";
-import type { DbProjectSchema } from "./db_project.js";
 
 for (let i = 1; i <= 60; ++i) {
     proj4.defs('utm' + i + 'n', `+proj=utm +zone=${i} +datum=WGS84 +units=m +no_defs +type=crs`);

@@ -1,4 +1,4 @@
-import Layout from "./Layout.js";
+import Layout from "./Layout.js"
 
 export default function Client(props: {
     lng: number,

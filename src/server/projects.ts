@@ -3,9 +3,9 @@ import { updateProjectInp, type DbProjectSchema } from "./db_project.js";
 import type { DbUserSchema } from "./auth.js";
 import { z } from "zod";
 import { getDb } from "./db.js";
-import { EpanetWrapper } from "./epanet/EpanetWrapper.js";
-import { ServerboundPacket } from "./packets/serverbound.js";
-import type { ClientboundPacket } from "./packets/clientbound.js";
+import { EpanetWrapper } from "../epanet/EpanetWrapper.js";
+import { ServerboundPacket } from "../packets/serverbound.js";
+import type { ClientboundPacket } from "../packets/clientbound.js";
 
 // projects.ts: for keeping track of all projects that users may be editing
 class ProjectState {

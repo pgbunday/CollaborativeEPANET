@@ -5,10 +5,10 @@ import { Hono, type Context } from "hono";
 import { logger } from "hono/logger";
 import { getCookie } from "hono/cookie";
 import type { UpgradeWebSocket } from "hono/ws";
-import Projects from "./server_components/Projects.js";
+import Projects from "./components/Projects.js";
 import { html } from "hono/html";
-import Client from "./server_components/Client.js";
-import CreateProject from "./server_components/CreateProject.js";
+import Client from "./components/Client.js";
+import CreateProject from "./components/CreateProject.js";
 import { handleClientWebSocketClose, handleClientWebSocketError, handleClientWebSocketMessage, handleClientWebSocketOpen } from "./projects.js";
 
 export function getUserFromContext(c: Context): DbUserSchema | null {
