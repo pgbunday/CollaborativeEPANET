@@ -7,9 +7,9 @@ const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
 const OUTPUT_FILENAME = 'out.bin';
 
-type NodeGeoJSON = FeatureCollection<Geometry, GeoJsonProperties>;
+type NodeGeoJSON = FeatureCollection<Geometry, { id: string }>;
 
-export class EpanetState {
+export class EpanetWrapper {
     private workspace: Workspace
     private project: Project
     private utm_zone: string
@@ -37,8 +37,8 @@ export class EpanetState {
      * @param inp_file An INP file built with EPANET
      * @returns A new object built with the INP file
      */
-    static fromInp(inp_file: string, utm_zone: string): EpanetState {
-        const state = new EpanetState(utm_zone);
+    static fromInp(inp_file: string, utm_zone: string): EpanetWrapper {
+        const state = new EpanetWrapper(utm_zone);
         state.workspace.writeFile(INP_FILENAME, inp_file);
         state.project.open(INP_FILENAME, REPORT_FILENAME, OUTPUT_FILENAME);
         return state;
@@ -56,9 +56,9 @@ export class EpanetState {
      * @returns A network identical to the current one, but with different
      * objects and memory
      */
-    clone(): EpanetState {
+    clone(): EpanetWrapper {
         const inp_file = this.saveInp();
-        const backup = EpanetState.fromInp(inp_file, this.utm_zone);
+        const backup = EpanetWrapper.fromInp(inp_file, this.utm_zone);
         return backup;
     }
 
@@ -164,14 +164,13 @@ export class EpanetState {
             const jsonCoords = utmToLongLat(jsonCoordsXY, this.utm_zone)
 
             const nodeType = this.project.getNodeType(i);
-            const feature: Feature = {
+            const feature: Feature<Geometry, { id: string }> = {
                 type: "Feature",
                 geometry: {
                     type: "Point",
                     coordinates: jsonCoords,
                 },
                 properties: {
-                    nodeIndex: i,
                     id: this.project.getNodeId(i),
                 }
             };
@@ -191,8 +190,8 @@ export class EpanetState {
     }
 
     // TODO: also handle other link types, not just LinkType.Pipe
-    getPipesGeoJSON(utm_zone: string): FeatureCollection<Geometry, GeoJsonProperties> {
-        const pipesGeoJSON: GeoJSON<Geometry, GeoJsonProperties> = {
+    getPipesGeoJSON(utm_zone: string): FeatureCollection<Geometry, { id: string }> {
+        const pipesGeoJSON: GeoJSON<Geometry, { id: string }> = {
             type: "FeatureCollection",
             features: [],
         }

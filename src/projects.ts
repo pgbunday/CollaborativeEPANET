@@ -3,7 +3,7 @@ import { updateProjectInp, type DbProjectSchema } from "./db_project.js";
 import type { DbUserSchema } from "./auth.js";
 import { z } from "zod";
 import { getDb } from "./db.js";
-import { EpanetState } from "./epanet/epanet_state.js";
+import { EpanetWrapper } from "./epanet/EpanetWrapper.js";
 import { ServerboundPacket } from "./packets/serverbound.js";
 import type { ClientboundPacket } from "./packets/clientbound.js";
 
@@ -12,12 +12,12 @@ class ProjectState {
     db: DbProjectSchema
     // clients keeps track of all open websockets, for broadcasting data
     clients: Set<WSContext<WebSocket>>
-    epanet: EpanetState
+    epanet: EpanetWrapper
     constructor(db: DbProjectSchema, firstClient: WSContext<WebSocket>) {
         this.db = db;
         this.clients = new Set();
         this.clients.add(firstClient);
-        this.epanet = EpanetState.fromInp(this.db.inp_file, db.utm_zone);
+        this.epanet = EpanetWrapper.fromInp(this.db.inp_file, db.utm_zone);
     }
     broadcast(message: ClientboundPacket) {
         const serialized = JSON.stringify(message);

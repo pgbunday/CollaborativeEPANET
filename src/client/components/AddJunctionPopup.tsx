@@ -6,7 +6,7 @@ export default function AddJunctionPopup(props: {
     lngLat: maplibregl.LngLat,
     popup: maplibregl.Popup,
     project_path: string,
-    ws: WebSocket,
+    applyAndSendChange: (msg: ServerboundPacket) => void,
     utm_zone: string,
 }) {
     const [z, setZ] = useState(0);
@@ -30,7 +30,7 @@ export default function AddJunctionPopup(props: {
                     elevation: z,
                 }
             }
-            props.ws.send(JSON.stringify(toSend));
+            props.applyAndSendChange(toSend);
             props.popup.remove();
         }}>Create</button>
     </form >

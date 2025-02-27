@@ -6,13 +6,13 @@ export default function PipePropertiesPopup(props: {
     lngLat: maplibregl.LngLat,
     popup: maplibregl.Popup,
     project_path: string,
-    ws: WebSocket,
     length: number,
     diameter: number,
     roughness: number,
     loss_coefficient: number,
     initial_status: LinkStatus,
     id: string,
+    applyAndSendChange: (msg: ServerboundPacket) => void,
 }) {
     const [length, setLength] = useState(props.length);
     const [diameter, setDiameter] = useState(props.diameter);
@@ -45,7 +45,7 @@ export default function PipePropertiesPopup(props: {
                     roughness,
                 }
             };
-            props.ws.send(JSON.stringify(toSend));
+            props.applyAndSendChange(toSend);
             props.popup.remove();
         }}>Update</button>
         <button type="submit" onClick={async (e) => {
@@ -54,7 +54,7 @@ export default function PipePropertiesPopup(props: {
                 type: "delete_pipe_sb",
                 id: props.id,
             };
-            props.ws.send(JSON.stringify(toSend));
+            props.applyAndSendChange(toSend);
             props.popup.remove();
         }}>Delete</button>
     </form>

@@ -6,7 +6,7 @@ export default function AddReservoirPopup(props: {
     lngLat: maplibregl.LngLat,
     popup: maplibregl.Popup,
     project_path: string,
-    ws: WebSocket,
+    applyAndSendChange: (msg: ServerboundPacket) => void,
     utm_zone: string,
 }) {
     const [elevation, setElevation] = useState(0);
@@ -26,7 +26,7 @@ export default function AddReservoirPopup(props: {
                     y: utmCoords[1],
                 }
             };
-            props.ws.send(JSON.stringify(toSend));
+            props.applyAndSendChange(toSend);
             props.popup.remove();
         }}>Create</button>
     </form>

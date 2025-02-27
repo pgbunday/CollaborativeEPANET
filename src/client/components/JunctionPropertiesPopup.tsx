@@ -5,9 +5,9 @@ export default function JunctionPropertiesPopup(props: {
     lngLat: maplibregl.LngLat,
     popup: maplibregl.Popup,
     project_path: string,
-    ws: WebSocket,
     elevation: number,
     id: string,
+    applyAndSendChange: (msg: ServerboundPacket) => void,
 }) {
     const [elevation, setElevation] = useState(props.elevation);
     return <form method="post" action={props.project_path + "/add_tank"} onSubmit={(e) => e.preventDefault()}>
@@ -22,7 +22,7 @@ export default function JunctionPropertiesPopup(props: {
                     elevation,
                 }
             };
-            props.ws.send(JSON.stringify(toSend));
+            props.applyAndSendChange(toSend);
             props.popup.remove();
         }}>Update</button>
         <button type="submit" onClick={async (e) => {
@@ -31,7 +31,7 @@ export default function JunctionPropertiesPopup(props: {
                 type: "delete_junction_sb",
                 id: props.id,
             };
-            props.ws.send(JSON.stringify(toSend));
+            props.applyAndSendChange(toSend);
             props.popup.remove();
         }}>Delete</button>
     </form >
