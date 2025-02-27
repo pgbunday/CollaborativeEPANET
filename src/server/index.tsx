@@ -8,9 +8,9 @@ import { getUserByUsernamePassword, insertUser } from './auth.js';
 import { createNodeWebSocket } from '@hono/node-ws';
 import type { BaseMime } from 'hono/utils/mime';
 import { configDotenv } from 'dotenv';
-import Register from './server_components/Register.js';
-import Login from './server_components/Login.js';
-import Index from './server_components/Index.js';
+import Register from './components/Register.js';
+import Login from './components/Login.js';
+import Index from './components/Index.js';
 import createAuthed, { getUserFromContext } from './authed_hono.js';
 import { z } from 'zod';
 
