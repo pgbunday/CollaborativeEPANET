@@ -2,7 +2,7 @@
   "name": "CollaborativeEPANET",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.tsx",
+    "dev": "tsx watch src/server/index.tsx",
     "build-client": "tsx build-client.ts"
   },
   "dependencies": {
