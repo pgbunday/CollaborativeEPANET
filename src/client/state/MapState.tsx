@@ -278,7 +278,7 @@ export default class MapState {
     private renderSbPacket(p: ServerboundPacket) {
         if (p.type == "add_junction_sb") {
             this.localGeoJson.addJunction(p.data);
-            (this.map.getSource('junctions-soource') as GeoJSONSource).setData(this.localGeoJson.junctions);
+            (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.localGeoJson.junctions);
         } else if (p.type == "add_pipe_sb") {
             this.localGeoJson.addPipe(p.data, this.epanetState.local);
             (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.localGeoJson.pipes);
