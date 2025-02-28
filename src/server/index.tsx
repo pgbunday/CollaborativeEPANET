@@ -154,6 +154,10 @@ app.get('/static/create_project.css', async (c) => {
   return await serveFile(c, 'build-client/create_project.css', 'text/css');
 })
 
+app.get('/static/projects.css', async (c) => {
+  return await serveFile(c, 'build-client/projects.css', 'text/css');
+})
+
 app.get('/font/:fontstack/:range_pbf', async (c) => {
   return await serveFile(c, 'static/demotiles/font/' + c.req.param().fontstack + '/' + c.req.param().range_pbf, 'font/woff2');
 })
