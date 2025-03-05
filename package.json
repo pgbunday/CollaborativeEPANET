@@ -9,8 +9,6 @@
     "@hono/node-server": "^1.13.8",
     "@hono/node-ws": "^1.0.7",
     "@maptiler/geocoding-control": "^2.1.6",
-    "@mikro-orm/better-sqlite": "^6.4.7",
-    "@mikro-orm/core": "^6.4.7",
     "@turf/clone": "^7.2.0",
     "@types/better-sqlite3": "^7.6.12",
     "bcryptjs": "^3.0.0",
