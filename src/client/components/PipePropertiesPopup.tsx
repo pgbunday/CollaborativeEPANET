@@ -34,8 +34,9 @@ export default function PipePropertiesPopup(props: {
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const toSend: ServerboundPacket = {
-                type: "pipe_properties_sb",
+                type: "epanet_action_sb",
                 data: {
+                    type: "set_pipe_properties_action",
                     old_id: props.id,
                     new_id: props.id,
                     diameter,
@@ -51,8 +52,11 @@ export default function PipePropertiesPopup(props: {
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const toSend: ServerboundPacket = {
-                type: "delete_pipe_sb",
-                id: props.id,
+                type: "epanet_action_sb",
+                data: {
+                    type: "delete_pipe_action",
+                    id: props.id,
+                }
             };
             props.applyAndSendChange(toSend);
             props.popup.remove();

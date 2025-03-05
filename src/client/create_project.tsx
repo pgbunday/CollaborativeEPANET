@@ -29,7 +29,7 @@ const map = new maplibregl.Map({
 });
 
 map.on('load', () => {
-    const gc = new GeocodingControl({ apiKey: process.env.MAPTILER_API_KEY, maplibregl });
+    const gc = new GeocodingControl({ apiKey: process.env.MAPTILER_API_KEY! });
     map.addControl(gc);
 })
 

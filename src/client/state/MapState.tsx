@@ -52,9 +52,11 @@ export default class MapState {
     private addPipeState: AddPipeState
     public readonly clickMode: ClickMode
     private utmZone: string
-    private epanetState: SyncEpanetState
+    public readonly epanetState: SyncEpanetState
     private map: maplibregl.Map
     private project_path: string
+    private mapLoaded: boolean
+    private mapLoadedListenerQueue: { (p: ClientboundPacket): void }[]
 
     private localGeoJson: GeoJsonState
     private syncedGeoJson: GeoJsonState
@@ -68,6 +70,8 @@ export default class MapState {
         project_url: string,
         project_path: string
     }) {
+        this.mapLoaded = false;
+        this.mapLoadedListenerQueue = [];
         this.utmZone = args.utm_zone;
         this.localGeoJson = new GeoJsonState(this.utmZone);
         this.syncedGeoJson = new GeoJsonState(this.utmZone);
@@ -103,7 +107,7 @@ export default class MapState {
             }
         });
         this.map.on('load', async () => {
-            const gc = new GeocodingControl({ apiKey: process.env.MAPTILER_API_KEY, maplibregl });
+            const gc = new GeocodingControl({ apiKey: process.env.MAPTILER_API_KEY! });
             this.map.addControl(gc);
 
             // From https://iconoir.com/ , Shapes: circle. Copy download link
@@ -219,8 +223,23 @@ export default class MapState {
                 this.handleBaseMapMouseMove(e);
             });
 
-            this.epanetState.subscribe((p) => this.handleCbPacket(p));
+            const listeners = [(p: ClientboundPacket) => this.handleCbPacket(p)];
+            // listeners.push(this.mapLoadedListenerQueue);
+            for (const queued of this.mapLoadedListenerQueue) {
+                listeners.push(queued);
+            }
+            this.epanetState.subscribe(listeners);
+            this.mapLoaded = true;
+            this.mapLoadedListenerQueue = [];
         })
+    }
+
+    public subscribeAfterLoad(listener: (p: ClientboundPacket) => void) {
+        if (this.mapLoaded) {
+            this.epanetState.subscribe([listener]);
+        } else {
+            this.mapLoadedListenerQueue.push(listener);
+        }
     }
 
     private handleCbPacket(p: ClientboundPacket) {
@@ -229,7 +248,7 @@ export default class MapState {
         // calls applySynced() anyways, so we would just run into duplication
         // errors if there was also a call here.
         // For certain types of packets, update GeoJSON
-        if (p.type == "project_info_cb") {
+        if (p.type == "track_edit_cb") {
             // Update all the GeoJSON
             this.syncedGeoJson.loadFromEpanet(this.epanetState.synced);
             // Render new data
@@ -240,68 +259,73 @@ export default class MapState {
             (this.map.getSource('cursors-source') as GeoJSONSource).setData(this.syncedGeoJson.cursors);
             // Get local up to speed
             this.localGeoJson = this.syncedGeoJson.clone();
-        } else if (p.type == "add_junction_cb") {
-            this.syncedGeoJson.addJunction(p.data);
-            this.localGeoJson.junctions = clone(this.syncedGeoJson.junctions);
-            (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.syncedGeoJson.junctions);
-        } else if (p.type == "add_pipe_cb") {
-            this.syncedGeoJson.addPipe(p.data, this.epanetState.synced);
-            this.localGeoJson.pipes = clone(this.syncedGeoJson.pipes);
-            (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.syncedGeoJson.pipes);
-        } else if (p.type == "add_reservoir_cb") {
-            this.syncedGeoJson.addReservoir(p.data);
-            this.localGeoJson.reservoirs = clone(this.syncedGeoJson.reservoirs);
-            (this.map.getSource('reservoirs-source') as GeoJSONSource).setData(this.syncedGeoJson.reservoirs);
-        } else if (p.type == "add_tank_cb") {
-            this.syncedGeoJson.addTank(p.data);
-            this.localGeoJson.tanks = clone(this.syncedGeoJson.tanks);
-            (this.map.getSource('tanks-source') as GeoJSONSource).setData(this.syncedGeoJson.tanks);
-        } else if (p.type == "delete_junction_cb") {
-            this.syncedGeoJson.deleteJunction(p.id);
-            this.localGeoJson.junctions = clone(this.syncedGeoJson.junctions);
-            (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.syncedGeoJson.junctions);
-        } else if (p.type == "delete_pipe_cb") {
-            this.syncedGeoJson.deletePipe(p.id);
-            this.localGeoJson.pipes = clone(this.syncedGeoJson.pipes);
-            (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.syncedGeoJson.pipes);
+        } else if (p.type == "epanet_action_cb") {
+            if (p.data.type == "add_junction_action") {
+                this.syncedGeoJson.addJunction(p.data);
+                this.localGeoJson.junctions = clone(this.syncedGeoJson.junctions);
+                (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.syncedGeoJson.junctions);
+            } else if (p.data.type == "add_pipe_action") {
+                this.syncedGeoJson.addPipe(p.data, this.epanetState.synced);
+                this.localGeoJson.pipes = clone(this.syncedGeoJson.pipes);
+                (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.syncedGeoJson.pipes);
+            } else if (p.data.type == "add_reservoir_action") {
+                this.syncedGeoJson.addReservoir(p.data);
+                this.localGeoJson.reservoirs = clone(this.syncedGeoJson.reservoirs);
+                (this.map.getSource('reservoirs-source') as GeoJSONSource).setData(this.syncedGeoJson.reservoirs);
+            } else if (p.data.type == "add_tank_action") {
+                this.syncedGeoJson.addTank(p.data);
+                this.localGeoJson.tanks = clone(this.syncedGeoJson.tanks);
+                (this.map.getSource('tanks-source') as GeoJSONSource).setData(this.syncedGeoJson.tanks);
+            } else if (p.data.type == "delete_junction_action") {
+                this.syncedGeoJson.deleteJunction(p.data.id);
+                this.localGeoJson.junctions = clone(this.syncedGeoJson.junctions);
+                (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.syncedGeoJson.junctions);
+            } else if (p.data.type == "delete_pipe_action") {
+                this.syncedGeoJson.deletePipe(p.data.id);
+                this.localGeoJson.pipes = clone(this.syncedGeoJson.pipes);
+                (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.syncedGeoJson.pipes);
+            } else {
+                console.warn('handleCbPacket: unhandled EPANET action,', p);
+            }
         } else if (p.type == "mouse_move_cb") {
             this.syncedGeoJson.doMouseMoveCb(p);
             this.localGeoJson.cursors = clone(this.syncedGeoJson.cursors);
             (this.map.getSource('cursors-source') as GeoJSONSource).setData(this.syncedGeoJson.cursors);
-        } else if (p.type == "empty_cb" || p.type == "junction_properties_cb" || p.type == "pipe_properties_cb") {
-            // Ignore these, GeoJSON doesn't track properties. Probably could though...
+        } else if (p.type == "empty_cb") {
+            // explicitly do nothing
         } else {
             console.warn('Warning: MapState.handleIncomingPacket, unhandled packet:', p);
         }
     }
 
     private renderSbPacket(p: ServerboundPacket) {
-        if (p.type == "add_junction_sb") {
-            this.localGeoJson.addJunction(p.data);
-            (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.localGeoJson.junctions);
-        } else if (p.type == "add_pipe_sb") {
-            this.localGeoJson.addPipe(p.data, this.epanetState.local);
-            (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.localGeoJson.pipes);
-        } else if (p.type == "add_reservoir_sb") {
-            this.localGeoJson.addReservoir(p.data);
-            (this.map.getSource('reservoirs-source') as GeoJSONSource).setData(this.localGeoJson.reservoirs);
-        } else if (p.type == "add_tank_sb") {
-            this.localGeoJson.addTank(p.data);
-            (this.map.getSource('tanks-source') as GeoJSONSource).setData(this.localGeoJson.tanks);
-        } else if (p.type == "delete_junction_sb") {
-            this.localGeoJson.deleteJunction(p.id);
-            (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.localGeoJson.junctions);
-        } else if (p.type == "delete_pipe_sb") {
-            this.localGeoJson.deletePipe(p.id);
-            (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.localGeoJson.pipes);
-        } else if (
-            p.type == "junction_properties_sb"
-            || p.type == "mouse_move_sb"
-            || p.type == "pipe_properties_sb"
-            || p.type == "reservoir_properties_sb"
-            || p.type == "tank_properties_sb"
-        ) {
-            // Ignore, these aren't relevant for rendering (yet)
+        if (p.type == "epanet_action_sb") {
+            if (p.data.type == "add_junction_action") {
+                this.localGeoJson.addJunction(p.data);
+                (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.localGeoJson.junctions);
+            } else if (p.data.type == "add_pipe_action") {
+                this.localGeoJson.addPipe(p.data, this.epanetState.local);
+                (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.localGeoJson.pipes);
+            } else if (p.data.type == "add_reservoir_action") {
+                this.localGeoJson.addReservoir(p.data);
+                (this.map.getSource('reservoirs-source') as GeoJSONSource).setData(this.localGeoJson.reservoirs);
+            } else if (p.data.type == "add_tank_action") {
+                this.localGeoJson.addTank(p.data);
+                (this.map.getSource('tanks-source') as GeoJSONSource).setData(this.localGeoJson.tanks);
+            } else if (p.data.type == "delete_junction_action") {
+                this.localGeoJson.deleteJunction(p.data.id);
+                (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.localGeoJson.junctions);
+            } else if (p.data.type == "delete_pipe_action") {
+                this.localGeoJson.deletePipe(p.data.id);
+                (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.localGeoJson.pipes);
+            } else if (
+                p.data.type == "set_junction_properties_action"
+                || p.data.type == "set_pipe_properties_action"
+            ) {
+                // Ignore, these aren't relevant for rendering (yet)
+            } else {
+                console.warn('Unhandled EPANET action in renderSbPacket:', p);
+            }
         } else {
             console.warn('Warning: unhandled packet in renderSbPacket:', p);
         }
@@ -416,7 +440,7 @@ export default class MapState {
                             // To fix, rather than sending a packet now, add a popup
                             // for add pipe
                             const toSend: ServerboundPacket = {
-                                type: "add_pipe_sb",
+                                type: "epanet_action_sb",
                                 data: this.addPipeState.toAddPipeData(this.utmZone, this.epanetState.local, "P" + Math.random()),
                             };
                             this.addPipeState.reset();

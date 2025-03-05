@@ -1,6 +1,6 @@
 import { longLatToUtm } from "../../coords.js";
 import type { EpanetWrapper } from "../../epanet/EpanetWrapper.js";
-import type { AddPipeData } from "../../packets/common.js";
+import type { AddPipeAction } from "../../packets/common.js";
 
 export default class AddPipeState {
     start_id: string
@@ -23,7 +23,7 @@ export default class AddPipeState {
     finish(end_id: string) {
         this.end_id = end_id;
     }
-    toAddPipeData(utm_zone: string, epanet: EpanetWrapper, id: string): AddPipeData {
+    toAddPipeData(utm_zone: string, epanet: EpanetWrapper, id: string): AddPipeAction {
         const vertices = [];
         for (const lngLat of this.intermediate_coordinates) {
             const utmCoords = longLatToUtm([lngLat.longitude, lngLat.latitude], utm_zone);
@@ -60,6 +60,7 @@ export default class AddPipeState {
             }
         }
         return {
+            type: "add_pipe_action",
             end_node: this.end_id,
             id,
             length,

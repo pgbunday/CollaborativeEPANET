@@ -15,8 +15,9 @@ export default function JunctionPropertiesPopup(props: {
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const toSend: ServerboundPacket = {
-                type: "junction_properties_sb",
+                type: "epanet_action_sb",
                 data: {
+                    type: "set_junction_properties_action",
                     old_id: props.id,
                     new_id: props.id,
                     elevation,
@@ -28,8 +29,11 @@ export default function JunctionPropertiesPopup(props: {
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
             const toSend: ServerboundPacket = {
-                type: "delete_junction_sb",
-                id: props.id,
+                type: "epanet_action_sb",
+                data: {
+                    type: "delete_junction_action",
+                    id: props.id,
+                }
             };
             props.applyAndSendChange(toSend);
             props.popup.remove();

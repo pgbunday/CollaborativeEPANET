@@ -1,5 +1,5 @@
 # Project database
-/collab.sqlite
+/collab.sqlite*
 # One tile cache
 /tmp_tiles
 # Another tile cache

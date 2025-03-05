@@ -19,8 +19,9 @@ export default function AddReservoirPopup(props: {
             e.preventDefault();
             const utmCoords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);
             const toSend: ServerboundPacket = {
-                type: "add_reservoir_sb",
+                type: "epanet_action_sb",
                 data: {
+                    type: "add_reservoir_action",
                     id,
                     x: utmCoords[0],
                     y: utmCoords[1],

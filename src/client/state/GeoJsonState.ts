@@ -1,9 +1,9 @@
 import type { FeatureCollection, GeoJsonProperties, Geometry } from "geojson";
 import type { ClientboundPacket, MouseMoveCb } from "../../packets/clientbound.js";
-import type { AddJunctionData, AddPipeData, AddReservoirData, AddTankData } from "../../packets/common.js";
 import type { EpanetWrapper } from "../../epanet/EpanetWrapper.js";
 import clone from "@turf/clone";
 import { utmToLongLat } from "../../coords.js";
+import type { AddJunctionAction, AddPipeAction, AddReservoirAction, AddTankAction } from "../../packets/common.js";
 
 type Collection = FeatureCollection<Geometry, { id: string }>;
 
@@ -59,7 +59,7 @@ export default class GeoJsonState {
         return ret;
     }
 
-    public addJunction(data: AddJunctionData) {
+    public addJunction(data: AddJunctionAction) {
         const [longitude, latitude] = utmToLongLat([data.x, data.y], this.utmZone);
         this.junctions.features.push({
             type: "Feature",
@@ -87,7 +87,7 @@ export default class GeoJsonState {
         }
     }
 
-    public addReservoir(data: AddReservoirData) {
+    public addReservoir(data: AddReservoirAction) {
         const [longitude, latitude] = utmToLongLat([data.x, data.y], this.utmZone);
         this.reservoirs.features.push({
             type: "Feature",
@@ -112,7 +112,7 @@ export default class GeoJsonState {
         }
     }
 
-    public addTank(data: AddTankData) {
+    public addTank(data: AddTankAction) {
         const [longitude, latitude] = utmToLongLat([data.x, data.y], this.utmZone);
         this.tanks.features.push({
             type: "Feature",
@@ -138,7 +138,7 @@ export default class GeoJsonState {
     }
 
     // TODO: reduce code duplication here and in EpanetWrapper.getPipesGeoJSON()?
-    public addPipe(data: AddPipeData, epanet: EpanetWrapper) {
+    public addPipe(data: AddPipeAction, epanet: EpanetWrapper) {
         const startCoordsXY = epanet.getNodeCoords(data.start_node);
         const finishCoordsXY = epanet.getNodeCoords(data.end_node);
         const startCoords = utmToLongLat([startCoordsXY.x, startCoordsXY.y], this.utmZone);

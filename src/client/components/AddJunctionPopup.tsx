@@ -22,8 +22,9 @@ export default function AddJunctionPopup(props: {
             e.preventDefault();
             const utm_coords = longLatToUtm([props.lngLat.lng, props.lngLat.lat], props.utm_zone);
             const toSend: ServerboundPacket = {
-                type: "add_junction_sb",
+                type: "epanet_action_sb",
                 data: {
+                    type: "add_junction_action",
                     id,
                     x: utm_coords[0],
                     y: utm_coords[1],

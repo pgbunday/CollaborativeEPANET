@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { DbUserSchema, getUserByAuthToken, getUserByUsername } from "./auth.js";
-import { addUserToProject, DbProjectSchema, getProjectByUuid, getUserProjectRole, getUserProjects, insertProject } from "./db_project.js";
+import { DbProject, getUserProjects } from "./db_project.js";
 import { Hono, type Context } from "hono";
 import { logger } from "hono/logger";
 import { getCookie } from "hono/cookie";
@@ -65,10 +65,10 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
         let longitude = formData.get('longitude');
         let latitude = formData.get('latitude');
         let zoom = formData.get('zoom');
-        let project: DbProjectSchema | null;
+        let project: DbProject | null;
         if (name && longitude && latitude && zoom) {
             name = name.toString();
-            project = insertProject(name, user, Number(longitude), Number(latitude), Number(zoom));
+            project = DbProject.new(name, user, Number(longitude), Number(latitude), Number(zoom));
         } else {
             project = null;
         }
@@ -88,26 +88,26 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
     authed.get('/projects/:project_uuid', (c) => {
         const user = c.get('user');
         const { project_uuid } = c.req.param();
-        const project = getProjectByUuid(project_uuid);
+        const project = new DbProject(project_uuid);
         if (!project) {
             return c.redirect('/projects');
         }
-        const role = getUserProjectRole(user, project);
+        const role = project.getUserRole(user);
         if (!role) {
             return c.redirect('/projects');
         }
-        return c.html(html`<!DOCTYPE html>${Client({ project_name: project.name, lng: project.longitude, lat: project.latitude, zoom: project.zoom, utm_zone: project.utm_zone })}`)
+        return c.html(html`<!DOCTYPE html>${Client({ project_name: project.name, lng: project.longitude, lat: project.latitude, zoom: project.zoom, utm_zone: project.utmZone })}`)
     });
 
     authed.post('/projects/:project_uuid/add_user', async (c) => {
         const user = c.get('user');
         const { project_uuid } = c.req.param();
-        const project = getProjectByUuid(project_uuid);
+        const project = new DbProject((project_uuid));
         if (!project) {
             c.status(401);
             return c.body(null);
         }
-        const role = getUserProjectRole(user, project);
+        const role = project.getUserRole(user);
         if (!role) {
             c.status(401);
             return c.body(null);
@@ -119,7 +119,7 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
             c.status(500);
             return c.body(null);
         }
-        if (addUserToProject(otherUser, project, "editor")) {
+        if (project.addUser(otherUser, "editor")) {
             c.status(200);
             return c.body(null);
         } else {
@@ -134,26 +134,26 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
         // just have {}, send a message, then close the WS right away.
         const user = c.get('user');
         const { project_uuid } = c.req.param();
-        const project = getProjectByUuid(project_uuid);
+        const project = new DbProject((project_uuid));
         if (!project) {
             return {};
         }
-        const role = getUserProjectRole(user, project);
+        const role = project.getUserRole(user);
         if (!role) {
             return {};
         }
         return {
             onOpen: (open, ws) => {
-                handleClientWebSocketOpen(ws, user, project);
+                handleClientWebSocketOpen(ws, user, project.uuid);
             },
             onClose: (close, ws) => {
-                handleClientWebSocketClose(ws, user, project);
+                handleClientWebSocketClose(ws, user, project.uuid);
             },
             onError: (error, ws) => {
-                handleClientWebSocketError(ws, user, project);
+                handleClientWebSocketError(ws, user, project.uuid);
             },
             onMessage: (msg, ws) => {
-                handleClientWebSocketMessage(ws, user, project, msg);
+                handleClientWebSocketMessage(ws, user, project.uuid, msg);
             },
         };
     }))

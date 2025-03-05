@@ -1,7 +1,8 @@
 import { ActionCodeType, CountType, FlowUnits, HeadLossType, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
 import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry } from "geojson";
 import { utmToLongLat } from "../coords.js";
-import type { AddJunctionData, AddPipeData, AddReservoirData, AddTankData, JunctionPropertiesData, LinkStatus, PipePropertiesData } from "../packets/common.js";
+import type { LinkStatus, EpanetAction, AddJunctionAction, AddReservoirAction, AddTankAction, AddPipeAction, SetPipePropertiesAction, SetJunctionPropertiesAction } from "../packets/common.js";
+import type { EpanetEdit } from "../packets/clientbound.js";
 
 const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
@@ -62,13 +63,35 @@ export class EpanetWrapper {
         return backup;
     }
 
+    applyAction(action: EpanetAction) {
+        if (action.type == "add_junction_action") {
+            this.addJunction(action);
+        } else if (action.type == "add_pipe_action") {
+            this.addPipe(action);
+        } else if (action.type == "add_reservoir_action") {
+            this.addReservoir(action);
+        } else if (action.type == "add_tank_action") {
+            this.addTank(action);
+        } else if (action.type == "delete_junction_action") {
+            this.deleteJunction(action.id);
+        } else if (action.type == "delete_pipe_action") {
+            this.deletePipe(action.id);
+        } else if (action.type == "set_junction_properties_action") {
+            this.junctionProperties(action);
+        } else if (action.type == "set_pipe_properties_action") {
+            this.pipeProperties(action);
+        } else {
+            console.warn('Unknown action in EpanetWrapper.applyAction:', action);
+        }
+    }
+
     /**
      * Attempts to add a junction to the network with the attached data. Errors
      * from epanet-js will be thrown as exceptions, so callers should use
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the junction
      */
-    addJunction(data: AddJunctionData) {
+    addJunction(data: AddJunctionAction) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Junction);
         this.project.setNodeValue(nodeIndex, NodeProperty.Elevation, data.elevation);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
@@ -80,7 +103,7 @@ export class EpanetWrapper {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the reservoir
      */
-    addReservoir(data: AddReservoirData) {
+    addReservoir(data: AddReservoirAction) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Reservoir);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
     }
@@ -91,7 +114,7 @@ export class EpanetWrapper {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the tank
      */
-    addTank(data: AddTankData) {
+    addTank(data: AddTankAction) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Tank);
         this.project.setNodeValue(nodeIndex, NodeProperty.Elevation, data.elevation);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
@@ -103,7 +126,7 @@ export class EpanetWrapper {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the pipe
      */
-    addPipe(data: AddPipeData) {
+    addPipe(data: AddPipeAction) {
         const pipeIdx = this.project.addLink(data.id, LinkType.Pipe, data.start_node, data.end_node);
         this.project.setLinkValue(pipeIdx, LinkProperty.Length, data.length);
         if (data.vertices.length != 0) {
@@ -117,7 +140,7 @@ export class EpanetWrapper {
         }
     }
 
-    pipeProperties(data: PipePropertiesData) {
+    pipeProperties(data: SetPipePropertiesAction) {
         const pipeIdx = this.project.getLinkIndex(data.old_id);
         this.project.setLinkValue(pipeIdx, LinkProperty.Diameter, data.diameter);
         this.project.setLinkValue(pipeIdx, LinkProperty.Length, data.length);
@@ -130,7 +153,7 @@ export class EpanetWrapper {
         this.project.setLinkValue(pipeIdx, LinkProperty.MinorLoss, data.loss_coefficient);
     }
 
-    junctionProperties(data: JunctionPropertiesData) {
+    junctionProperties(data: SetJunctionPropertiesAction) {
         const junctionIdx = this.project.getNodeIndex(data.old_id);
         this.project.setNodeValue(junctionIdx, NodeProperty.Elevation, data.elevation);
     }
@@ -235,7 +258,9 @@ export class EpanetWrapper {
         return coords;
     }
 
-    getPipeProperties(id: string): PipePropertiesData {
+    // TODO: dont return an action, instead define a new type in common.ts for
+    // pipe properties. Use that for both get and set.
+    getPipeProperties(id: string): SetPipePropertiesAction {
         const pipeIdx = this.project.getLinkIndex(id);
         const diameter = this.project.getLinkValue(pipeIdx, LinkProperty.Diameter);
         const length = this.project.getLinkValue(pipeIdx, LinkProperty.Length);
@@ -249,6 +274,7 @@ export class EpanetWrapper {
         const roughness = this.project.getLinkValue(pipeIdx, LinkProperty.Roughness);
         const loss_coefficient = this.project.getLinkValue(pipeIdx, LinkProperty.MinorLoss);
         return {
+            type: "set_pipe_properties_action",
             diameter,
             old_id: id,
             new_id: id,
@@ -264,10 +290,11 @@ export class EpanetWrapper {
         this.project.deleteLink(pipeIdx, ActionCodeType.Conditional);
     }
 
-    getJunctionProperties(id: string): JunctionPropertiesData {
+    getJunctionProperties(id: string): SetJunctionPropertiesAction {
         const junctionIdx = this.project.getNodeIndex(id);
         const elevation = this.project.getNodeValue(junctionIdx, NodeProperty.Elevation);
         return {
+            type: "set_junction_properties_action",
             elevation,
             new_id: id,
             old_id: id,

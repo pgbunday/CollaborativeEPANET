@@ -1,8 +1,10 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import "./client.css"
-import { render, useRef, useState, type RefObject } from 'hono/jsx/dom';
+import { render, useEffect, useRef, useState, type RefObject } from 'hono/jsx/dom';
 import MapState from './state/MapState.js';
 import type { ClickModes } from './state/ClickMode.js';
+import type { JSX } from 'hono/jsx/jsx-runtime';
+import type { TrackEditSb } from '../packets/serverbound';
 
 // proj4.defs('utm15n', '+proj=utm +zone=15 +datum=WGS84 +units=m +no_defs +type=crs');
 
@@ -81,8 +83,62 @@ function ShareModal(props: { dialogRef: RefObject<HTMLDialogElement | null> }) {
     )
 }
 
+function editTreeToElementArray(closeDialog: () => void): JSX.Element[] {
+    const edits = mapState.epanetState.editTree.edits.values().toArray();
+    edits.sort((a, b) => {
+        if (a.edit_id < b.edit_id) {
+            return -1;
+        } else if (a.edit_id > b.edit_id) {
+            return 1;
+        } else {
+            return 0;
+        }
+    });
+    const items = edits.map(edit => {
+        return <li key={edit.edit_id}>
+            {edit.created_at.toISOString()}
+            {' '}
+            {edit.action.type}
+            <button onClick={async () => {
+                const toSend: TrackEditSb = {
+                    type: "track_edit_sb",
+                    edit_id: edit.edit_id,
+                };
+                mapState.epanetState.applyLocalAndSend(toSend);
+                closeDialog();
+            }}>Restore</button>
+        </li>
+    });
+    console.log('editTreeToElementArray return:', items);
+    return items;
+}
+
+function HistoryModal(props: { dialogRef: RefObject<HTMLDialogElement | null> }) {
+    const [listItems, setListItems] = useState<JSX.Element[]>([]);
+    useEffect(() => {
+        setListItems(editTreeToElementArray(() => props.dialogRef.current?.close()));
+        mapState.subscribeAfterLoad((p) => {
+            if (p.type == "epanet_action_cb" || p.type == "track_edit_cb") {
+                setListItems(editTreeToElementArray(() => props.dialogRef.current?.close()));
+            }
+        });
+        return () => { }
+    }, []);
+    console.log(listItems);
+    return (
+        <div>
+            <button onClick={() => props.dialogRef.current?.showModal()}>History</button>
+            <dialog class="history-dialog" ref={props.dialogRef}>
+                <ul>{listItems}</ul>
+                <button onClick={() => props.dialogRef.current?.close()}>Close</button>
+            </dialog>
+        </div>
+    )
+}
+
 function Toolbar() {
     const dialogRef = useRef(null);
+    const historyDialogRef = useRef(null);
     return <div class="toolbar">
         <div class="toolbar-left">
             <h3 class="project-name">{metaProjectName}</h3>
@@ -90,6 +146,7 @@ function Toolbar() {
         </div>
         <div class="toolbar-right">
             <ShareModal dialogRef={dialogRef} />
+            <HistoryModal dialogRef={historyDialogRef} />
             <h3 class="back-button"><a href="/projects">Back</a></h3>
         </div>
     </div>
