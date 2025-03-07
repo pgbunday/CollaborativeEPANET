@@ -101,6 +101,10 @@ body {
     border-radius: 0 .375em .375em 0;
 }
 
+dialog {
+    max-height: 50%;
+}
+
 dialog::backdrop {
     opacity: 0.7;
     background: black;
