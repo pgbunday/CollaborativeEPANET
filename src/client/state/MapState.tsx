@@ -259,29 +259,29 @@ export default class MapState {
             (this.map.getSource('cursors-source') as GeoJSONSource).setData(this.syncedGeoJson.cursors);
             // Get local up to speed
             this.localGeoJson = this.syncedGeoJson.clone();
-        } else if (p.type == "epanet_action_cb") {
-            if (p.data.type == "add_junction_action") {
-                this.syncedGeoJson.addJunction(p.data);
+        } else if (p.type == "epanet_edit_cb") {
+            if (p.data.action.type == "add_junction_action") {
+                this.syncedGeoJson.addJunction(p.data.action);
                 this.localGeoJson.junctions = clone(this.syncedGeoJson.junctions);
                 (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.syncedGeoJson.junctions);
-            } else if (p.data.type == "add_pipe_action") {
-                this.syncedGeoJson.addPipe(p.data, this.epanetState.synced);
+            } else if (p.data.action.type == "add_pipe_action") {
+                this.syncedGeoJson.addPipe(p.data.action, this.epanetState.synced);
                 this.localGeoJson.pipes = clone(this.syncedGeoJson.pipes);
                 (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.syncedGeoJson.pipes);
-            } else if (p.data.type == "add_reservoir_action") {
-                this.syncedGeoJson.addReservoir(p.data);
+            } else if (p.data.action.type == "add_reservoir_action") {
+                this.syncedGeoJson.addReservoir(p.data.action);
                 this.localGeoJson.reservoirs = clone(this.syncedGeoJson.reservoirs);
                 (this.map.getSource('reservoirs-source') as GeoJSONSource).setData(this.syncedGeoJson.reservoirs);
-            } else if (p.data.type == "add_tank_action") {
-                this.syncedGeoJson.addTank(p.data);
+            } else if (p.data.action.type == "add_tank_action") {
+                this.syncedGeoJson.addTank(p.data.action);
                 this.localGeoJson.tanks = clone(this.syncedGeoJson.tanks);
                 (this.map.getSource('tanks-source') as GeoJSONSource).setData(this.syncedGeoJson.tanks);
-            } else if (p.data.type == "delete_junction_action") {
-                this.syncedGeoJson.deleteJunction(p.data.id);
+            } else if (p.data.action.type == "delete_junction_action") {
+                this.syncedGeoJson.deleteJunction(p.data.action.id);
                 this.localGeoJson.junctions = clone(this.syncedGeoJson.junctions);
                 (this.map.getSource('junctions-source') as GeoJSONSource).setData(this.syncedGeoJson.junctions);
-            } else if (p.data.type == "delete_pipe_action") {
-                this.syncedGeoJson.deletePipe(p.data.id);
+            } else if (p.data.action.type == "delete_pipe_action") {
+                this.syncedGeoJson.deletePipe(p.data.action.id);
                 this.localGeoJson.pipes = clone(this.syncedGeoJson.pipes);
                 (this.map.getSource('pipes-source') as GeoJSONSource).setData(this.syncedGeoJson.pipes);
             } else {

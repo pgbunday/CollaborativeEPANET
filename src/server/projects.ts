@@ -172,14 +172,23 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, user: DbU
                 try {
                     let resp: ClientboundPacket = { type: "empty_cb" };
                     state.epanet.applyAction(packet.data);
+                    const created_at = new Date();
                     resp = {
-                        type: "epanet_action_cb",
-                        data: packet.data,
+                        type: "epanet_edit_cb",
+                        data: {
+                            action: packet.data,
+                            created_at,
+                            edit_id: state.db.editCount,
+                            parent_id: state.db.currentEditId,
+                            snapshot_id: state.db.currentSnapshotId,
+                            user_username: user.username,
+                            user_uuid: user.uuid,
+                        }
                     }
                     state.db.addEdit({
                         user_username: user.username,
                         user_uuid: user.uuid,
-                        created_at: new Date(),
+                        created_at,
                         action: packet.data,
                         edit_id: state.db.editCount,
                         parent_id: state.db.currentEditId,
@@ -193,7 +202,6 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, user: DbU
                     // TODO: send the client a message saying their edit failed? They
                     // should already know that because they also have an EPANET model,
                     // but just in case we could report it back
-                    console.log(Object.keys(err));
                     // console.log(JSON.stringify(err));
                     state.epanet = backup;
                 }

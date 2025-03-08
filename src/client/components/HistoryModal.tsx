@@ -80,20 +80,21 @@ export default function HistoryModal({ open, setOpen, mapState }: { open: boolea
     const dialogRef: RefObject<HTMLDialogElement | null> = useRef(null);
     const [listItems, setListItems] = useState<JSX.Element[]>(editTreeToElementArray(() => setOpen(false), mapState));
     useEffect(() => {
+        console.log('in useEffect');
         mapState.subscribeAfterLoad((p) => {
             console.log(p);
-            if (p.type == "epanet_action_cb" || p.type == "track_edit_cb") {
-                setListItems(editTreeToElementArray(() => { dialogRef.current?.close(); setOpen(false) }, mapState));
+            if (p.type == "epanet_edit_cb" || p.type == "track_edit_cb") {
+                console.log('edits should be updating?');
+                console.log('equality test:', listItems == editTreeToElementArray(() => { dialogRef.current?.close(); setOpen(false) }, mapState))
+                setListItems(editTreeToElementArray(() => { setOpen(false) }, mapState));
             }
         });
         return () => { }
-    }, [listItems]);
+    }, []);
     return (
         <div>
             <button onClick={() => { dialogRef.current?.showModal(); setOpen(false); }}>History</button>
-            <dialog class="history-dialog" ref={dialogRef} onTouchCancel={() => {
-                console.log('touch cancel');
-            }} onCancel={() => { console.log('cancel') }} onClose={() => { console.log('close') }}>
+            <dialog class="history-dialog" ref={dialogRef}>
                 <table>
                     <tr>
                         <th>Timestamp</th>
@@ -101,7 +102,6 @@ export default function HistoryModal({ open, setOpen, mapState }: { open: boolea
                     </tr>
                     {listItems}
                 </table>
-                {/* <ul>{listItems}</ul> */}
                 <button onClick={() => { dialogRef.current?.close(); setOpen(false) }}>Close</button>
             </dialog>
         </div>

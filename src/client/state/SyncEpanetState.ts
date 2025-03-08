@@ -87,8 +87,8 @@ export default class SyncEpanetState {
       return true;
     } else {
       try {
-        if (packet.type == "epanet_action_cb") {
-          this.syncedEpanet.applyAction(packet.data);
+        if (packet.type == "epanet_edit_cb") {
+          this.syncedEpanet.applyAction(packet.data.action);
         } else if (packet.type == "track_edit_cb") {
           console.log(packet);
           const { edit_id, snapshot_id, snapshot_data } = packet;
