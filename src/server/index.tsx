@@ -162,6 +162,14 @@ app.get('/font/:fontstack/:range_pbf', async (c) => {
   return await serveFile(c, 'static/demotiles/font/' + c.req.param().fontstack + '/' + c.req.param().range_pbf, 'font/woff2');
 })
 
+app.get('/static/icons/junction.webp', async (c) => {
+  return await serveFile(c, 'static/icons/junction.webp', 'image/webp');
+})
+
+app.get('/static/icons/cursor.webp', async (c) => {
+  return await serveFile(c, 'static/icons/cursor.webp', 'image/webp');
+})
+
 // Caching layer for satellite tiles. Reduces API key use substantially when
 // constantly refreshing a project page in development.
 app.get('/tiles/satellite/:z/:x/:y_jpg', async (c) => {

@@ -111,13 +111,15 @@ export default class MapState {
             this.map.addControl(gc);
 
             // From https://iconoir.com/ , Shapes: circle. Copy download link
-            const circleDataUrl = 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHdpZHRoPSIyNHB4IiBoZWlnaHQ9IjI0cHgiIHN0cm9rZS13aWR0aD0iMS41IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgY29sb3I9IiMwMDAwMDAiPjxwYXRoIGQ9Ik0xMiAyMkMxNy41MjI4IDIyIDIyIDE3LjUyMjggMjIgMTJDMjIgNi40NzcxNSAxNy41MjI4IDIgMTIgMkM2LjQ3NzE1IDIgMiA2LjQ3NzE1IDIgMTJDMiAxNy41MjI4IDYuNDc3MTUgMjIgMTIgMjJaIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjwvcGF0aD48L3N2Zz4=';
-            const circleBitmap = await renderSvgData(circleDataUrl, 256, 256);
-            this.map.addImage('circle', circleBitmap);
+            // const circleDataUrl = 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHdpZHRoPSIyNHB4IiBoZWlnaHQ9IjI0cHgiIHN0cm9rZS13aWR0aD0iMS41IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgY29sb3I9IiMwMDAwMDAiPjxwYXRoIGQ9Ik0xMiAyMkMxNy41MjI4IDIyIDIyIDE3LjUyMjggMjIgMTJDMjIgNi40NzcxNSAxNy41MjI4IDIgMTIgMkM2LjQ3NzE1IDIgMiA2LjQ3NzE1IDIgMTJDMiAxNy41MjI4IDYuNDc3MTUgMjIgMTIgMjJaIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjwvcGF0aD48L3N2Zz4=';
+            // const circleBitmap = await renderSvgData(circleDataUrl, 256, 256);
+            const junctionBitmap = await this.map.loadImage('/static/icons/junction.webp');
+            this.map.addImage('circle', junctionBitmap.data);
 
-            const cursorDataUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHN0cm9rZS13aWR0aD0iMS41IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIGNvbG9yPSIjMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTIwLjg2NyA4LjI4N2MxLjYuNjUgMS40NzcgMi45NTQtLjE4MiAzLjQzbC04LjM3MiAyLjQwOEw4LjQ5IDIxLjk1Yy0uNzU4IDEuNTUyLTMuMDQ5IDEuMjcyLTMuNDEtLjQxNkwxLjE4MSAzLjM1N0MuODc2IDEuOTMxIDIuMjkuNzQzIDMuNjQyIDEuMjkyWiIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjEuOTkyIi8+PC9zdmc+Cg==';
-            const cursorBitmap = await renderSvgData(cursorDataUrl, 256, 256);
-            this.map.addImage('cursor', cursorBitmap);
+            // const cursorDataUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHN0cm9rZS13aWR0aD0iMS41IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIGNvbG9yPSIjMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTIwLjg2NyA4LjI4N2MxLjYuNjUgMS40NzcgMi45NTQtLjE4MiAzLjQzbC04LjM3MiAyLjQwOEw4LjQ5IDIxLjk1Yy0uNzU4IDEuNTUyLTMuMDQ5IDEuMjcyLTMuNDEtLjQxNkwxLjE4MSAzLjM1N0MuODc2IDEuOTMxIDIuMjkuNzQzIDMuNjQyIDEuMjkyWiIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjEuOTkyIi8+PC9zdmc+Cg==';
+            // const cursorBitmap = await renderSvgData(cursorDataUrl, 256, 256);
+            const cursorBitmap = await this.map.loadImage('/static/icons/cursor.webp');
+            this.map.addImage('cursor', cursorBitmap.data);
 
             this.map.addSource('cursors-source', {
                 type: 'geojson',
