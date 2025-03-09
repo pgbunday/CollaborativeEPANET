@@ -2,12 +2,11 @@ import { useState } from "hono/jsx";
 import type { ServerboundPacket } from "../../packets/serverbound.js";
 
 export default function JunctionPropertiesPopup(props: {
-    lngLat: maplibregl.LngLat,
-    popup: maplibregl.Popup,
     project_path: string,
     elevation: number,
     id: string,
     applyAndSendChange: (msg: ServerboundPacket) => void,
+    remove: () => void,
 }) {
     const [elevation, setElevation] = useState(props.elevation);
     return <form method="post" action={props.project_path + "/add_tank"} onSubmit={(e) => e.preventDefault()}>
@@ -24,7 +23,7 @@ export default function JunctionPropertiesPopup(props: {
                 }
             };
             props.applyAndSendChange(toSend);
-            props.popup.remove();
+            props.remove();
         }}>Update</button>
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
@@ -36,7 +35,7 @@ export default function JunctionPropertiesPopup(props: {
                 }
             };
             props.applyAndSendChange(toSend);
-            props.popup.remove();
+            props.remove();
         }}>Delete</button>
     </form >
 }

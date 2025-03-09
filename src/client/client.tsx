@@ -1,4 +1,4 @@
-import 'maplibre-gl/dist/maplibre-gl.css';
+// import 'maplibre-gl/dist/maplibre-gl.css';
 import "./client.css"
 import { render, useEffect, useRef, useState, type RefObject } from 'hono/jsx/dom';
 import MapState from './state/MapState.js';

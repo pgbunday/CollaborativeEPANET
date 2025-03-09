@@ -1,10 +1,10 @@
 import { useState } from "hono/jsx";
 import { LinkStatus } from "../../packets/common.js";
 import type { ServerboundPacket } from "../../packets/serverbound.js";
+import type { Coordinate } from "ol/coordinate.js";
 
 export default function PipePropertiesPopup(props: {
-    lngLat: maplibregl.LngLat,
-    popup: maplibregl.Popup,
+    lngLat: Coordinate,
     project_path: string,
     length: number,
     diameter: number,
@@ -13,6 +13,7 @@ export default function PipePropertiesPopup(props: {
     initial_status: LinkStatus,
     id: string,
     applyAndSendChange: (msg: ServerboundPacket) => void,
+    remove: () => void,
 }) {
     const [length, setLength] = useState(props.length);
     const [diameter, setDiameter] = useState(props.diameter);
@@ -20,8 +21,8 @@ export default function PipePropertiesPopup(props: {
     const [lossCoefficient, setLossCoefficient] = useState(props.loss_coefficient);
     const [initialStatus, setInitialStatus] = useState(props.initial_status);
     return <form method="post" action={props.project_path + "/add_tank"} onSubmit={(e) => e.preventDefault()}>
-        <input type="number" name="longitude" value={props.lngLat.lng} hidden={true} />
-        <input type="number" name="latitude" value={props.lngLat.lat} hidden={true} />
+        <input type="number" name="longitude" value={props.lngLat[0]} hidden={true} />
+        <input type="number" name="latitude" value={props.lngLat[1]} hidden={true} />
         <label>Length: <input type="number" name="length" value={props.length} onChange={(e) => { setLength(Number((e.target as HTMLInputElement).value)) }} /></label>
         <label>Diameter: <input type="number" name="diameter" value={props.diameter} onChange={(e) => { setDiameter(Number((e.target as HTMLInputElement).value)) }} /></label>
         <label>Roughness: <input type="number" name="roughness" value={props.roughness} onChange={(e) => { setRoughness(Number((e.target as HTMLInputElement).value)) }} /></label>
@@ -47,7 +48,7 @@ export default function PipePropertiesPopup(props: {
                 }
             };
             props.applyAndSendChange(toSend);
-            props.popup.remove();
+            props.remove();
         }}>Update</button>
         <button type="submit" onClick={async (e) => {
             e.preventDefault();
@@ -59,7 +60,7 @@ export default function PipePropertiesPopup(props: {
                 }
             };
             props.applyAndSendChange(toSend);
-            props.popup.remove();
+            props.remove();
         }}>Delete</button>
     </form>
 }

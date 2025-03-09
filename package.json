@@ -17,13 +17,12 @@
     "epanet-js": "file:./vendor/epanet-js/packages/epanet-js",
     "esbuild-plugin-polyfill-node": "^0.3.0",
     "hono": "^4.6.20",
-    "maplibre-gl": "^5.1.0",
+    "ol": "^10.4.0",
     "proj4": "^2.15.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.16",
-    "@types/leaflet": "^1.9.16",
     "@types/node": "^20.11.17",
     "@types/proj4": "^2.5.6",
     "esbuild": "^0.24.2",
