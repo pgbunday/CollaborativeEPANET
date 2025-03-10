@@ -1,4 +1,3 @@
-// import maplibregl, { GeoJSONSource } from 'maplibre-gl';
 import AddPipeState from './AddPipeState.js';
 import ClickMode from './ClickMode.js';
 import SyncEpanetState from './SyncEpanetState.js';
@@ -12,14 +11,13 @@ import PipePropertiesPopup from '../components/PipePropertiesPopup.js';
 import AddJunctionPopup from '../components/AddJunctionPopup.js';
 import AddReservoirPopup from '../components/AddReservoirPopup.js';
 import AddTankPopup from '../components/AddTankPopup.js';
-// import '@maptiler/geocoding-control/style.css';
 import type { ClientboundPacket } from '../../packets/clientbound.js';
 import GeoJsonState from './GeoJsonState.js';
 import clone from '@turf/clone';
 import { Map, MapBrowserEvent, Overlay, View } from 'ol';
 import { useGeographic } from 'ol/proj.js';
 import TileLayer from 'ol/layer/Tile.js';
-import { Vector, XYZ } from 'ol/source.js';
+import { XYZ } from 'ol/source.js';
 import { Attribution, defaults } from 'ol/control.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
@@ -30,6 +28,7 @@ import CircleStyle from 'ol/style/Circle.js';
 import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import RegularShape from 'ol/style/RegularShape.js';
+import Text from 'ol/style/Text.js';
 
 useGeographic();
 
@@ -86,44 +85,35 @@ export default class MapState {
         this.cursorsSource = new VectorSource({});
         this.cursorsLayer = new VectorLayer({
             source: this.cursorsSource,
-            style: new Style({
-                image: new RegularShape({
-                    points: 3,
-                    radius: 10,
-                    stroke: new Stroke({
-                        color: 'black',
-                        width: 4,
+            style: (feature, resolution) => {
+                return new Style({
+                    image: new RegularShape({
+                        points: 3,
+                        radius: 10,
+                        stroke: new Stroke({
+                            color: 'black',
+                            width: 4,
+                        }),
+                        fill: new Fill({
+                            color: 'rgba(255, 255, 255, 1)',
+                        })
                     }),
-                    fill: new Fill({
-                        color: 'rgba(255, 255, 255, 1)',
+                    text: new Text({
+                        text: feature.getProperties().username,
+                        backgroundFill: new Fill({
+                            color: 'white',
+                        }),
+                        backgroundStroke: new Stroke({
+                            color: 'black',
+                            width: 4,
+                        }),
+                        offsetY: 32,
+                        font: '12px sans-serif',
+                        padding: [4, 8, 4, 8],
                     })
                 })
-            })
+            }
         });
-
-        this.junctionsSource = new VectorSource({});
-        this.junctionsLayer = new VectorLayer({
-            source: this.junctionsSource,
-            style: new Style({
-                image: new CircleStyle({
-                    radius: 14,
-                    stroke: new Stroke({
-                        color: 'black',
-                        width: 4,
-                    }),
-                    fill: new Fill({
-                        color: 'rgba(255, 255, 255, 1)',
-                    })
-                })
-            })
-        });
-        this.junctionsLayer
-
-        this.tanksSource = new VectorSource({});
-        this.tanksLayer = new VectorLayer({ source: this.tanksSource });
-
-        this.reservoirsSource = new VectorSource({});
-        this.reservoirsLayer = new VectorLayer({ source: this.reservoirsSource });
 
         this.pipesSource = new VectorSource({});
         this.pipesLayer = new VectorLayer({
@@ -136,6 +126,44 @@ export default class MapState {
             })
         });
 
+        this.junctionsSource = new VectorSource({});
+        this.junctionsLayer = new VectorLayer({
+            source: this.junctionsSource,
+            style: (feature, resolution) => {
+                return new Style({
+                    image: new CircleStyle({
+                        radius: 14,
+                        stroke: new Stroke({
+                            color: 'black',
+                            width: 4,
+                        }),
+                        fill: new Fill({
+                            color: 'rgba(255, 255, 255, 1)',
+                        })
+                    }),
+                    text: new Text({
+                        text: feature.getProperties().id,
+                        backgroundFill: new Fill({
+                            color: 'white',
+                        }),
+                        backgroundStroke: new Stroke({
+                            color: 'black',
+                            width: 4,
+                        }),
+                        offsetY: 32,
+                        font: '12px sans-serif',
+                        padding: [4, 8, 4, 8]
+                    })
+                })
+            }
+        });
+
+        this.tanksSource = new VectorSource({});
+        this.tanksLayer = new VectorLayer({ source: this.tanksSource });
+
+        this.reservoirsSource = new VectorSource({});
+        this.reservoirsLayer = new VectorLayer({ source: this.reservoirsSource });
+
         const gc = new GeocodingControl({ apiKey: process.env.MAPTILER_API_KEY! });
 
         this.map = new Map({
@@ -147,16 +175,19 @@ export default class MapState {
             layers: [
                 new TileLayer({
                     source: new XYZ({
-                        url: '/tiles/satellite/{z}/{x}/{y}.jpg',
+                        url: '/tiles/satellite/avif/512/{z}/{x}/{y}.avif',
                         projection: 'EPSG:3857',
+                        // Native size is 512. If the URL size is smaller, the
+                        // tiles will be stretched to 512, saving bandwidth at
+                        // the cost of visual quality.
                         tileSize: 512,
                     })
                 }),
-                this.cursorsLayer,
+                this.pipesLayer,
                 this.junctionsLayer,
                 this.tanksLayer,
                 this.reservoirsLayer,
-                this.pipesLayer,
+                this.cursorsLayer,
             ],
             controls: defaults({ attribution: false }).extend([
                 attribution,
@@ -295,7 +326,6 @@ export default class MapState {
                 console.warn('handleCbPacket: unhandled EPANET action,', p);
             }
         } else if (p.type == "mouse_move_cb") {
-            console.log(p);
             this.syncedGeoJson.doMouseMoveCb(p);
             this.localGeoJson.cursors = clone(this.syncedGeoJson.cursors);
             this.cursorsSource = new VectorSource({ features: new GeoJSON().readFeatures(this.syncedGeoJson.cursors) });
@@ -351,11 +381,8 @@ export default class MapState {
             e.preventDefault();
             const clickMode = this.clickMode.getClickMode();
             if (clickMode == "add_junction") {
-                // const popup = createBasePopup(e);
                 const [overlay, content, remove] = this.createBasePopup();
                 overlay.setPosition(e.coordinate);
-                // Safety: popup._content.firstChild will be valid because of the
-                // popup.setHTML() call in createBasePopup
                 render(<AddJunctionPopup
                     lngLat={e.coordinate}
                     project_path={this.project_path}
@@ -373,8 +400,6 @@ export default class MapState {
             } else if (clickMode == "add_reservoir") {
                 const [overlay, content, remove] = this.createBasePopup();
                 overlay.setPosition(e.coordinate);
-                // Safety: popup._content.firstChild will be valid because of the
-                // popup.setHTML() call in createBasePopup
                 render(<AddReservoirPopup
                     lngLat={e.coordinate}
                     project_path={this.project_path}
@@ -386,8 +411,6 @@ export default class MapState {
             } else if (clickMode == "add_tank") {
                 const [overlay, content, remove] = this.createBasePopup();
                 overlay.setPosition(e.coordinate);
-                // Safety: popup._content.firstChild will be valid because of the
-                // popup.setHTML() call in createBasePopup
                 render(<AddTankPopup
                     lngLat={e.coordinate}
                     project_path={this.project_path}

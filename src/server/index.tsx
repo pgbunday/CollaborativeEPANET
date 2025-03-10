@@ -13,6 +13,8 @@ import Login from './components/Login.js';
 import Index from './components/Index.js';
 import createAuthed, { getUserFromContext } from './authed_hono.js';
 import { z } from 'zod';
+import sharp from 'sharp';
+import { getTileData } from './TileManager.js';
 
 const { parsed: envParsed, error: envParseError } = configDotenv();
 if (envParseError) {
@@ -172,33 +174,78 @@ app.get('/static/icons/cursor.webp', async (c) => {
 
 // Caching layer for satellite tiles. Reduces API key use substantially when
 // constantly refreshing a project page in development.
-app.get('/tiles/satellite/:z/:x/:y_jpg', async (c) => {
-  const numberParse = z.coerce.number().min(0).max(18);
-  const zoomString = c.req.param().z;
-  const x = c.req.param().x;
-  const y_jpg = c.req.param().y_jpg;
-  // make sure zoom is in range [0, 18]
-  // On parse failure, the catch block will return 404 to the client
-  numberParse.parse(zoomString);
-  try {
-    const contents = await readFile(`static/tiles/satellite/${zoomString}/${x}/${y_jpg}`);
-    c.header('Content-Type', 'image/jpeg');
-    return c.body(await new Blob([contents]).arrayBuffer());
-  } catch (err) {
-    // readFile failed, so fetch from origin
-    try {
-      const response = await fetch(`https://api.maptiler.com/tiles/satellite-v2/${zoomString}/${x}/${y_jpg}?key=${process.env.MAPTILER_API_KEY}`);
-      const data = await response.bytes();
-      await mkdir(`static/tiles/satellite/${zoomString}/${x}`, { recursive: true });
-      await writeFile(`static/tiles/satellite/${zoomString}/${x}/${y_jpg}`, data);
-      c.header('Content-Type', 'image/jpeg');
-      return c.body(await new Blob([data]).arrayBuffer());
-    } catch (err) {
-      c.status(404);
-      return c.body(null);
-    }
+app.get('/tiles/satellite/:format_str/:size_str/:z_str/:x_str/:y_ext', async (c) => {
+  const format = z.enum(['jpg', 'webp', 'avif']).parse(c.req.param().format_str);
+  const sizeStr = z.enum(['128', '256', '512']).parse(c.req.param().size_str);
+  const size = z.coerce.number().parse(sizeStr);
+  const zoom = z.coerce.number().int().min(0).max(18).parse(c.req.param().z_str);
+  const x = z.coerce.number().int().parse(c.req.param().x_str);
+  const [yStr, fileExt] = c.req.param().y_ext.split('.');
+  // fileExt should == format, but we need to be sure
+  if (fileExt != format) {
+    c.status(400);
+    return c.body('File extension must match overall tile format');
   }
+  const y = z.coerce.number().int().parse(yStr);
+  c.header('Cache-Control', 'max-age=86400');
+  if (format == 'jpg') {
+    c.header('Content-Type', 'image/jpeg');
+  } else if (format == 'avif') {
+    c.header('Content-Type', 'image/avif');
+  } else if (format == 'webp') {
+    c.header('Content-Type', 'image/webp');
+  }
+  return c.body(await getTileData(zoom, x, y, format, size));
 })
+// app.get('/tiles/satellite/:z_str/:x_str/:y_ext', async (c) => {
+//   const zoomParse = z.coerce.number().int().min(0).max(18);
+//   const zoom = zoomParse.parse(c.req.param().z_str);
+//   const x = z.coerce.number().int().parse(c.req.param().x_str);
+//   // ext should just be "jpg" or "webp". NOT ".jpg" or ".webp"
+//   const [y_str, ext] = c.req.param().y_ext.split('.');
+//   const y = z.coerce.number().int().parse(y_str);
+//   if (ext.endsWith('webp')) {
+//     try {
+//       const contents = await readFile(`static/tiles/satellite/${zoom}/${x}/${y}.webp`);
+//       c.header('Content-Type', 'image/webp');
+//       return c.body(await new Blob([contents]).arrayBuffer());
+//     } catch (e) {
+//       // reading webp failed: see if jpg exists
+//       try {
+//         const jpgContents = await readFile(`static/tiles/satellite/${zoom}/${x}/${y}.jpg`);
+//         const webpBuffer = await sharp(jpgContents).webp({
+//           quality: 75,
+//         }).toBuffer();
+//         // const imageData = await decodeJpeg(await new Blob([jpgContents]).arrayBuffer());
+//         // const webpBuffer = await encodeWebp(imageData, {
+//         //   quality: 75,
+//         // });
+//         await writeFile(`static/tiles/satellite/${zoom}/${x}/${y}.webp`, webpBuffer);
+//         c.header('Content-Type', 'image/webp');
+//         return c.body(await new Blob([webpBuffer]).arrayBuffer());
+//       } catch (e) {
+//         // also no jpg: finally try fetching from origin. Any errors here can't be recovered
+//         if (await getSatelliteTileOrigin(zoom, x, y)) {
+//           const contents = await readFile(`static/tiles/satellite/${zoom}/${x}/${y}.webp`);
+//           c.header('Content-Type', 'image/webp');
+//           return c.body(await new Blob([contents]).arrayBuffer());
+//         }
+//       }
+//     }
+//   } else if (ext.endsWith('jpg')) {
+//     try {
+//       const contents = await readFile(`static/tiles/satellite/${zoom}/${x}/${y}.jpg`);
+//       c.header('Content-Type', 'image/jpeg');
+//       return c.body(await new Blob([contents]).arrayBuffer());
+//     } catch (err) {
+//       if (await getSatelliteTileOrigin(zoom, x, y)) {
+//         const contents = await readFile(`static/tiles/satellite/${zoom}/${x}/${y}.jpg`);
+//         c.header('Content-Type', 'image/jpeg');
+//         return c.body(await new Blob([contents]).arrayBuffer());
+//       }
+//     }
+//   }
+// })
 
 // Finally, attach any routes that always need authentication to the root app.
 const authed = createAuthed(upgradeWebSocket);
