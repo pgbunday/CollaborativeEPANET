@@ -1,8 +1,23 @@
-import proj4 from "proj4";
+
+import { addCoordinateTransforms, addProjection, getTransform, Projection, transform } from "ol/proj.js";
+
+const wgs84 = 'EPSG:4326';
 
 for (let i = 1; i <= 60; ++i) {
-    proj4.defs('utm' + i + 'n', `+proj=utm +zone=${i} +datum=WGS84 +units=m +no_defs +type=crs`);
-    proj4.defs('utm' + i + 's', `+proj=utm +zone=${i} +south +datum=WGS84 +units=m +no_defs +type=crs`);
+    const northEpsg = 'EPSG:326' + String(i).padStart(2, '0');
+    const southEpsg = 'EPSG:327' + String(i).padStart(2, '0');
+    const northUtmToLongLat = getTransform(northEpsg, wgs84);
+    const northLongLatToUtm = getTransform(wgs84, northEpsg);
+    const southUtmToLongLat = getTransform(southEpsg, wgs84);
+    const southLongLatToUtm = getTransform(wgs84, southEpsg);
+    addProjection(new Projection({
+        code: 'utm' + i + 'n',
+    }));
+    addCoordinateTransforms('utm' + i + 'n', wgs84, northUtmToLongLat, northLongLatToUtm);
+    addProjection(new Projection({
+        code: 'utm' + i + 's'
+    }));
+    addCoordinateTransforms('utm' + i + 's', wgs84, southUtmToLongLat, southLongLatToUtm);
 }
 
 // Ported from https://github.com/Turbo87/utm/blob/master/utm/conversion.py
@@ -35,9 +50,9 @@ export function getUtmZone(longitude: number, latitude: number): string {
 }
 
 export function utmToLongLat(utm_coords: number[], utm_zone: string): number[] {
-    return proj4(utm_zone, 'EPSG:4326', utm_coords);
+    return transform(utm_coords, utm_zone, wgs84);
 }
 
 export function longLatToUtm(long_lat: number[], utm_zone: string): number[] {
-    return proj4('EPSG:4326', utm_zone, long_lat);
+    return transform(long_lat, wgs84, utm_zone);
 }

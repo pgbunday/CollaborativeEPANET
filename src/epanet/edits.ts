@@ -22,7 +22,7 @@ export class EditTree {
     // the same
     shallowCopy(): EditTree {
         const tree = new EditTree();
-        for(const [_, edit] of this.edits) {
+        for (const [_, edit] of this.edits) {
             tree.addNode(edit);
         }
         return tree;
@@ -52,7 +52,9 @@ export class EditTree {
                 this.children.set(edit.edit_id, []);
                 this.parents.set(edit.edit_id, edit.parent_id);
                 this.edits.set(edit.edit_id, edit);
-                console.error('EditTree addNode error, no existing parent for edit:', edit);
+                if (edit.parent_id != 0) {
+                    console.error('EditTree addNode error, no existing parent for edit:', edit);
+                }
             }
         }
     }

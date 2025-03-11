@@ -21,9 +21,9 @@ const map = new Map({
     layers: [
         new TileLayer({
             source: new XYZ({
-                url: '/tiles/satellite/avif/256/{z}/{x}/{y}.avif',
+                url: '/tiles/satellite/avif/512/{z}/{x}/{y}.avif',
                 projection: 'EPSG:3857',
-                tileSize: 256,
+                tileSize: 512,
             })
         })
     ],

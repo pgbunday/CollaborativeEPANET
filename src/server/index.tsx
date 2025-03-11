@@ -13,7 +13,7 @@ import Login from './components/Login.js';
 import Index from './components/Index.js';
 import createAuthed, { getUserFromContext } from './authed_hono.js';
 import { z } from 'zod';
-import sharp from 'sharp';
+// import sharp from 'sharp';
 import { getTileData } from './TileManager.js';
 
 const { parsed: envParsed, error: envParseError } = configDotenv();
