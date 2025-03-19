@@ -80,12 +80,9 @@ export default function HistoryModal({ open, setOpen, mapState }: { open: boolea
     const dialogRef: RefObject<HTMLDialogElement | null> = useRef(null);
     const [listItems, setListItems] = useState<JSX.Element[]>(editTreeToElementArray(() => setOpen(false), mapState));
     useEffect(() => {
-        console.log('in useEffect');
         mapState.subscribeAfterLoad((p) => {
             // console.log(p);
             if (p.type == "epanet_edit_cb" || p.type == "track_edit_cb") {
-                console.log('edits should be updating?');
-                console.log('equality test:', listItems == editTreeToElementArray(() => { dialogRef.current?.close(); setOpen(false) }, mapState))
                 setListItems(editTreeToElementArray(() => { setOpen(false) }, mapState));
             }
         });

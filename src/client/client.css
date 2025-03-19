@@ -127,7 +127,8 @@ dialog::backdrop {
     left: -50px;
 }
 
-.ol-popup:after, ol-popup:before {
+.ol-popup:after,
+ol-popup:before {
     top: 100%;
     border: solid transparent;
     content: " ";
@@ -158,6 +159,18 @@ dialog::backdrop {
     right: 8px;
 }
 
-/* .ol-popup-closer:after {
-    content: "✖";
-} */
+.data-visualization-control {
+    background-color: white;
+    left: 0.5em;
+    bottom: 0.5em;
+}
+
+.data-visualization-control div {
+    background-color: white;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.data-visualization-control button {
+    width: auto;
+}

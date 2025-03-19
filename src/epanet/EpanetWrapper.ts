@@ -1,7 +1,7 @@
-import { ActionCodeType, CountType, FlowUnits, HeadLossType, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
+import { ActionCodeType, CountType, FlowUnits, HeadLossType, InitHydOption, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
 import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry } from "geojson";
 import { utmToLongLat } from "../coords.js";
-import type { LinkStatus, EpanetAction, AddJunctionAction, AddReservoirAction, AddTankAction, AddPipeAction, SetPipePropertiesAction, SetJunctionPropertiesAction } from "../packets/common.js";
+import type { LinkStatus, EpanetAction, AddJunctionAction, AddReservoirAction, AddTankAction, AddPipeAction, SetPipePropertiesAction, SetJunctionPropertiesAction, SetReservoirPropertiesAction } from "../packets/common.js";
 import type { EpanetEdit } from "../packets/clientbound.js";
 
 const INP_FILENAME = 'project.inp';
@@ -11,8 +11,8 @@ const OUTPUT_FILENAME = 'out.bin';
 type NodeGeoJSON = FeatureCollection<Geometry, { id: string }>;
 
 export class EpanetWrapper {
-    private workspace: Workspace
-    private project: Project
+    public readonly workspace: Workspace
+    public readonly project: Project
     private utm_zone: string
 
     /**
@@ -26,6 +26,41 @@ export class EpanetWrapper {
         this.project = new Project(this.workspace);
         this.project.init(REPORT_FILENAME, OUTPUT_FILENAME, FlowUnits.GPM, HeadLossType.HW);
         this.utm_zone = utm_zone;
+    }
+
+    openH() {
+        this.project.openH();
+    }
+
+    initH() {
+        this.project.initH(InitHydOption.NoSave);
+    }
+
+    runH(): number {
+        return this.project.runH();
+    }
+
+    nextH(): number {
+        return this.project.nextH();
+    }
+
+    closeH() {
+        this.project.closeH();
+    }
+
+    solveH() {
+        this.project.solveH();
+    }
+
+    getNodePressures(): { id: string, pressure: number }[] {
+        const totalCount = this.project.getCount(CountType.NodeCount);
+        const pressures = [];
+        for (let i = 1; i <= totalCount; ++i) {
+            const nodeId = this.project.getNodeId(i);
+            const nodePressure = this.project.getNodeValue(i, NodeProperty.Pressure);
+            pressures.push({ id: nodeId, pressure: nodePressure });
+        }
+        return pressures;
     }
 
     openInp(inp_file: string) {
@@ -80,6 +115,8 @@ export class EpanetWrapper {
             this.junctionProperties(action);
         } else if (action.type == "set_pipe_properties_action") {
             this.pipeProperties(action);
+        } else if (action.type == "set_reservoir_properties_action") {
+            this.reservoirProperties(action);
         } else {
             console.warn('Unknown action in EpanetWrapper.applyAction:', action);
         }
@@ -156,6 +193,11 @@ export class EpanetWrapper {
     junctionProperties(data: SetJunctionPropertiesAction) {
         const junctionIdx = this.project.getNodeIndex(data.old_id);
         this.project.setNodeValue(junctionIdx, NodeProperty.Elevation, data.elevation);
+    }
+
+    reservoirProperties(data: SetReservoirPropertiesAction) {
+        const reservoirIdx = this.project.getNodeIndex(data.old_id);
+        this.project.setNodeValue(reservoirIdx, NodeProperty.Elevation, data.total_head);
     }
 
     getAllNodesGeoJSON(): {
@@ -298,6 +340,17 @@ export class EpanetWrapper {
             elevation,
             new_id: id,
             old_id: id,
+        }
+    }
+
+    getReservoirProperties(id: string): SetReservoirPropertiesAction {
+        const reservoirIdx = this.project.getNodeIndex(id);
+        const total_head = this.project.getNodeValue(reservoirIdx, NodeProperty.Elevation);
+        return {
+            type: "set_reservoir_properties_action",
+            new_id: id,
+            old_id: id,
+            total_head,
         }
     }
 

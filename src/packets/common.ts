@@ -50,7 +50,7 @@ export const SetReservoirPropertiesAction = z.object({
   type: z.literal("set_reservoir_properties_action"),
   old_id: z.string(),
   new_id: z.string(),
-  elevation: z.number(),
+  total_head: z.number(),
 });
 export type SetReservoirPropertiesAction = z.infer<
   typeof SetReservoirPropertiesAction
@@ -103,6 +103,12 @@ export const DeletePipeAction = z.object({
 });
 export type DeletePipeAction = z.infer<typeof DeletePipeAction>;
 
+export const DeleteReservoirAction = z.object({
+  type: z.literal('delete_reservoir_action'),
+  id: z.string(),
+});
+export type DeleteReservoirAction = z.infer<typeof DeleteReservoirAction>;
+
 export const EpanetAction = z.discriminatedUnion("type", [
   AddJunctionAction,
   AddReservoirAction,
@@ -114,5 +120,6 @@ export const EpanetAction = z.discriminatedUnion("type", [
   SetPipePropertiesAction,
   DeleteJunctionAction,
   DeletePipeAction,
+  DeleteReservoirAction,
 ]);
 export type EpanetAction = z.infer<typeof EpanetAction>;

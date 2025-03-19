@@ -1,11 +1,11 @@
 // import 'maplibre-gl/dist/maplibre-gl.css';
-import "./client.css"
 import { render, useEffect, useRef, useState, type RefObject } from 'hono/jsx/dom';
 import MapState from './state/MapState.js';
 import type { ClickModes } from './state/ClickMode.js';
 import type { JSX } from 'hono/jsx/jsx-runtime';
 import type { TrackEditSb } from '../packets/serverbound';
 import HistoryModal from './components/HistoryModal';
+import "./client.css"
 
 const metaLatitude = document.querySelector('meta[name="map-center-lat"]')?.getAttribute('value');
 const metaLongitude = document.querySelector('meta[name="map-center-lng"]')?.getAttribute('value');

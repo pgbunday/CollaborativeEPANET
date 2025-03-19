@@ -14,7 +14,7 @@ import AddTankPopup from '../components/AddTankPopup.js';
 import type { ClientboundPacket } from '../../packets/clientbound.js';
 import GeoJsonState from './GeoJsonState.js';
 import clone from '@turf/clone';
-import { Map, MapBrowserEvent, Overlay, View } from 'ol';
+import { Map as UiMap, MapBrowserEvent, Overlay, View } from 'ol';
 import { useGeographic } from 'ol/proj.js';
 import TileLayer from 'ol/layer/Tile.js';
 import { XYZ } from 'ol/source.js';
@@ -23,12 +23,15 @@ import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import type { FeatureLike } from 'ol/Feature.js';
-import Style from 'ol/style/Style.js';
+import Style, { type StyleLike } from 'ol/style/Style.js';
 import CircleStyle from 'ol/style/Circle.js';
 import Fill from 'ol/style/Fill.js';
 import Stroke from 'ol/style/Stroke.js';
 import RegularShape from 'ol/style/RegularShape.js';
 import Text from 'ol/style/Text.js';
+import { turbo_color } from '../../colors.js';
+import ReservoirPropertiesPopup from '../components/ReservoirPropertiesPopup.js';
+import DataVisualizationControl from '../components/DataVisualizationControl.js';
 
 useGeographic();
 
@@ -37,7 +40,7 @@ export default class MapState {
     public readonly clickMode: ClickMode
     private utmZone: string
     public readonly epanetState: SyncEpanetState
-    private map: Map
+    private map: UiMap
     private project_path: string
     private mapLoaded: boolean
     private mapLoadedListenerQueue: { (p: ClientboundPacket): void }[]
@@ -162,11 +165,40 @@ export default class MapState {
         this.tanksLayer = new VectorLayer({ source: this.tanksSource });
 
         this.reservoirsSource = new VectorSource({});
-        this.reservoirsLayer = new VectorLayer({ source: this.reservoirsSource });
+        this.reservoirsLayer = new VectorLayer({
+            source: this.reservoirsSource,
+            style: (feature, resolution) => {
+                return new Style({
+                    image: new CircleStyle({
+                        radius: 14,
+                        stroke: new Stroke({
+                            color: 'black',
+                            width: 4,
+                        }),
+                        fill: new Fill({
+                            color: 'rgba(255, 255, 255, 1)',
+                        })
+                    }),
+                    text: new Text({
+                        text: feature.getProperties().id,
+                        backgroundFill: new Fill({
+                            color: 'white',
+                        }),
+                        backgroundStroke: new Stroke({
+                            color: 'black',
+                            width: 4,
+                        }),
+                        offsetY: 32,
+                        font: '12px sans-serif',
+                        padding: [4, 8, 4, 8]
+                    })
+                })
+            }
+        });
 
         const gc = new GeocodingControl({ apiKey: process.env.MAPTILER_API_KEY! });
 
-        this.map = new Map({
+        this.map = new UiMap({
             target: 'map',
             view: new View({
                 center: [args.longitude, args.latitude],
@@ -192,6 +224,7 @@ export default class MapState {
             controls: defaults({ attribution: false }).extend([
                 attribution,
                 gc,
+                new DataVisualizationControl(this),
             ]),
         });
         this.map.on('click', (e) => {
@@ -203,6 +236,8 @@ export default class MapState {
                     console.log('clicked on a junction');
                 } else if (layer == this.pipesLayer) {
                     this.handlePipesClick(e, feature);
+                } else if (layer == this.reservoirsLayer) {
+                    this.handleReservoirsClick(e, feature);
                 }
             });
             if (count == 0) {
@@ -222,6 +257,60 @@ export default class MapState {
             this.mapLoaded = true;
             this.mapLoadedListenerQueue = [];
         })
+    }
+
+    public setNodeStyles({ showLabels, pressureOptions }: { showLabels: boolean, pressureOptions: { low: number, high: number } | undefined }) {
+        // Allow nodes to be individually colored
+        const m: Map<string, [number, number, number]> = new Map<string, [number, number, number]>();
+        if (pressureOptions) {
+            const pressures = this.epanetState.local.getNodePressures();
+            for (const { id, pressure } of pressures) {
+                const clamped = (pressure - pressureOptions.low) / (pressureOptions.high - pressureOptions.low);
+                m.set(id, turbo_color(clamped));
+            }
+        } else {
+            // do nothing, the style function will fall back to plain white
+        }
+        const f: StyleLike = (feature, resolution) => {
+            const id = feature.getProperties().id;
+            let fillColorStr = 'rgb(255 255 255)';
+            if (m.get(id)) {
+                const color = m.get(id)!;
+                fillColorStr = 'rgb( ' + Math.floor(color[0] * 255) + ' ' + Math.floor(color[1] * 255) + ' ' + Math.floor(color[2] * 255) + ')';
+            }
+            let text = undefined;
+            if (showLabels) {
+                text = new Text({
+                    text: feature.getProperties().id,
+                    backgroundFill: new Fill({
+                        color: 'white',
+                    }),
+                    backgroundStroke: new Stroke({
+                        color: 'black',
+                        width: 4,
+                    }),
+                    offsetY: 32,
+                    font: '12px sans-serif',
+                    padding: [4, 8, 4, 8]
+                })
+            }
+            return new Style({
+                image: new CircleStyle({
+                    radius: 14,
+                    stroke: new Stroke({
+                        color: 'black',
+                        width: 4,
+                    }),
+                    fill: new Fill({
+                        color: fillColorStr,
+                    })
+                }),
+                text,
+            })
+        };
+        this.junctionsLayer.setStyle(f);
+        this.reservoirsLayer.setStyle(f);
+        this.tanksLayer.setStyle(f);
     }
 
     private createBasePopup(): [Overlay, HTMLDivElement, () => void] {
@@ -270,6 +359,7 @@ export default class MapState {
         // errors if there was also a call here.
         // For certain types of packets, update GeoJSON
         if (p.type == "track_edit_cb") {
+            console.log(p.snapshot_data?.snapshot_inp);
             // Update all the GeoJSON
             this.syncedGeoJson.loadFromEpanet(this.epanetState.synced);
             // Render new data
@@ -277,10 +367,6 @@ export default class MapState {
                 features: new GeoJSON({}).readFeatures(this.syncedGeoJson.junctions)
             });
             this.junctionsLayer.setSource(this.junctionsSource);
-            console.log(this.syncedGeoJson.junctions);
-            console.log(new GeoJSON().readFeatures(this.syncedGeoJson.junctions));
-            console.log(this.junctionsSource);
-            console.log(this.junctionsLayer);
             this.tanksSource = new VectorSource({ features: new GeoJSON().readFeatures(this.syncedGeoJson.tanks) })
             this.tanksLayer.setSource(this.tanksSource);
             this.reservoirsSource = new VectorSource({ features: new GeoJSON().readFeatures(this.syncedGeoJson.reservoirs) });
@@ -457,6 +543,46 @@ export default class MapState {
         }
     }
 
+    private handleReservoirsClick(e: MapBrowserEvent<any>, feature: FeatureLike) {
+        if (!e.defaultPrevented) {
+            e.preventDefault();
+            const clickMode = this.clickMode.getClickMode();
+            if (clickMode == "add_pipe") {
+                try {
+                    if (this.addPipeState.start_id == '') {
+                        this.addPipeState.start(feature.getProperties().id);
+                    } else {
+                        this.addPipeState.finish(feature.getProperties().id);
+                        const toSend: ServerboundPacket = {
+                            type: "epanet_action_sb",
+                            data: this.addPipeState.toAddPipeData(this.utmZone, this.epanetState.local, "P" + Math.random()),
+                        };
+                        this.addPipeState.reset();
+                        this.renderSbPacket(toSend);
+                        this.epanetState.applyLocalAndSend(toSend);
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
+            } else if (clickMode == "pan") {
+                const lngLat = e.coordinate;
+                const [overlay, content, remove] = this.createBasePopup();
+                overlay.setPosition(e.coordinate);
+                const id = feature.getProperties().id;
+                const { total_head } = this.epanetState.local.getReservoirProperties(id);
+                render(<ReservoirPropertiesPopup
+                    applyAndSendChange={(msg) => { this.renderSbPacket(msg); this.epanetState.applyLocalAndSend(msg) }}
+                    id={id}
+                    lngLat={e.coordinate}
+                    project_path={this.project_path}
+                    remove={remove}
+                    total_head={total_head}
+                />, content);
+                this.map.addOverlay(overlay);
+            }
+        }
+    }
+
     private handleJunctionsClick(e: MapBrowserEvent<any>, feature: FeatureLike) {
         console.log('junctions clicked');
         if (!e.defaultPrevented) {
@@ -487,7 +613,6 @@ export default class MapState {
                     }
                     break;
                 case "pan": {
-                    console.log('should be showing a popup...');
                     const lngLat = e.coordinate;
                     const [overlay, content, remove] = this.createBasePopup();
                     overlay.setPosition(e.coordinate);
