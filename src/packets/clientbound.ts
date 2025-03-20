@@ -54,11 +54,38 @@ export const TrackEditCb = z.object({
 });
 export type TrackEditCb = z.infer<typeof TrackEditCb>;
 
+export const LoginSuccessCb = z.object({
+  type: z.literal("login_success_cb"),
+  // TODO: client-facing DbProjectSchema-style type
+  projects: z.array(z.string()),
+});
+export type LoginSuccessCb = z.infer<typeof LoginSuccessCb>;
+
+export const LoginFailureCb = z.object({
+  type: z.literal("login_failure_cb"),
+});
+export type LoginFailureCb = z.infer<typeof LoginFailureCb>;
+
+
+export const RegisterSuccessCb = z.object({
+  type: z.literal("register_success_cb"),
+  // TODO: client-facing DbProjectSchema-style type
+  projects: z.array(z.string()),
+});
+export type RegisterSuccessCb = z.infer<typeof RegisterSuccessCb>;
+
+export const RegisterFailureCb = z.object({
+  type: z.literal("login_failure_cb"),
+});
+export type RegisterFailureCb = z.infer<typeof RegisterFailureCb>;
+
 export const ClientboundPacket = z.discriminatedUnion("type", [
   MouseMoveCb,
   // ProjectInfoCb,
   EmptyCb,
   EpanetEditCb,
   TrackEditCb,
+  LoginSuccessCb,
+  LoginFailureCb,
 ]);
 export type ClientboundPacket = z.infer<typeof ClientboundPacket>;

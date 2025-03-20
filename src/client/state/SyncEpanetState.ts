@@ -78,6 +78,10 @@ export default class SyncEpanetState {
     }
   }
 
+  public send(packet: ServerboundPacket) {
+    this.ws.send(JSON.stringify(packet));
+  }
+
   /**
    * Interface for applying changes that the server has sent out for EPANET.
    * @param packet
@@ -90,7 +94,6 @@ export default class SyncEpanetState {
         if (packet.type == "epanet_edit_cb") {
           this.syncedEpanet.applyAction(packet.data.action);
         } else if (packet.type == "track_edit_cb") {
-          console.log(packet);
           const { edit_id, snapshot_id, snapshot_data } = packet;
           if (snapshot_id != this.currentSnapshotId && snapshot_data) {
             this.currentSnapshotInp = snapshot_data.snapshot_inp;
@@ -117,6 +120,8 @@ export default class SyncEpanetState {
           }
         }
 
+        // TODO: Currently, I throw out every local change by cloning synced state.
+        // Is there a cheaper way to get the same resulting functionality?
         this.localEpanet = this.syncedEpanet.clone();
         return true;
       } catch (e) {

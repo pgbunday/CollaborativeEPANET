@@ -9,7 +9,7 @@ import Projects from "./components/Projects.js";
 import { html } from "hono/html";
 import Client from "./components/Client.js";
 import CreateProject from "./components/CreateProject.js";
-import { handleClientWebSocketClose, handleClientWebSocketError, handleClientWebSocketMessage, handleClientWebSocketOpen } from "./projects.js";
+import { handleClientWebSocketClose, handleClientWebSocketError, handleClientWebSocketMessage, handleClientWebSocketOpen, setWsAuthenticated, setWsProjectAndSendInit } from "./projects.js";
 
 export function getUserFromContext(c: Context): DbUserSchema | null {
     const auth_token = getCookie(c, 'auth_token');
@@ -144,16 +144,18 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
         }
         return {
             onOpen: (open, ws) => {
-                handleClientWebSocketOpen(ws, user, project.uuid);
+                handleClientWebSocketOpen(ws);
+                setWsAuthenticated(ws, user);
+                setWsProjectAndSendInit(ws, project);
             },
             onClose: (close, ws) => {
-                handleClientWebSocketClose(ws, user, project.uuid);
+                handleClientWebSocketClose(ws);
             },
             onError: (error, ws) => {
-                handleClientWebSocketError(ws, user, project.uuid);
+                handleClientWebSocketError(ws);
             },
             onMessage: (msg, ws) => {
-                handleClientWebSocketMessage(ws, user, project.uuid, msg);
+                handleClientWebSocketMessage(ws, msg);
             },
         };
     }))
