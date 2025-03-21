@@ -14,6 +14,11 @@ export class EpanetWrapper {
     public readonly workspace: Workspace
     public readonly project: Project
     private utm_zone: string
+    private numEditsSinceInp_: number
+
+    get numEditsSinceInp() {
+        return this.numEditsSinceInp_;
+    }
 
     /**
      * Sets up classes used by the netework, without actually initializing
@@ -26,33 +31,34 @@ export class EpanetWrapper {
         this.project = new Project(this.workspace);
         this.project.init(REPORT_FILENAME, OUTPUT_FILENAME, FlowUnits.GPM, HeadLossType.HW);
         this.utm_zone = utm_zone;
+        this.numEditsSinceInp_ = 0;
     }
 
-    openH() {
+    public openH() {
         this.project.openH();
     }
 
-    initH() {
+    public initH() {
         this.project.initH(InitHydOption.NoSave);
     }
 
-    runH(): number {
+    public runH(): number {
         return this.project.runH();
     }
 
-    nextH(): number {
+    public nextH(): number {
         return this.project.nextH();
     }
 
-    closeH() {
+    public closeH() {
         this.project.closeH();
     }
 
-    solveH() {
+    public solveH() {
         this.project.solveH();
     }
 
-    getNodePressures(): { id: string, pressure: number }[] {
+    public getNodePressures(): { id: string, pressure: number }[] {
         const totalCount = this.project.getCount(CountType.NodeCount);
         const pressures = [];
         for (let i = 1; i <= totalCount; ++i) {
@@ -63,7 +69,7 @@ export class EpanetWrapper {
         return pressures;
     }
 
-    openInp(inp_file: string) {
+    public openInp(inp_file: string) {
         this.workspace.writeFile(INP_FILENAME, inp_file);
         this.project.open(INP_FILENAME, REPORT_FILENAME, OUTPUT_FILENAME)
     }
@@ -83,7 +89,7 @@ export class EpanetWrapper {
     /**
      * @returns A textual representation of the network, an INP file
      */
-    saveInp(): string {
+    public saveInp(): string {
         this.project.saveInpFile(INP_FILENAME);
         return this.workspace.readFile(INP_FILENAME, 'utf8');
     }
@@ -92,13 +98,14 @@ export class EpanetWrapper {
      * @returns A network identical to the current one, but with different
      * objects and memory
      */
-    clone(): EpanetWrapper {
+    public clone(): EpanetWrapper {
         const inp_file = this.saveInp();
         const backup = EpanetWrapper.fromInp(inp_file, this.utm_zone);
+        backup.numEditsSinceInp_ = this.numEditsSinceInp_;
         return backup;
     }
 
-    applyAction(action: EpanetAction) {
+    public applyAction(action: EpanetAction) {
         if (action.type == "add_junction_action") {
             this.addJunction(action);
         } else if (action.type == "add_pipe_action") {
@@ -119,7 +126,9 @@ export class EpanetWrapper {
             this.reservoirProperties(action);
         } else {
             console.warn('Unknown action in EpanetWrapper.applyAction:', action);
+            return;
         }
+        this.numEditsSinceInp_ += 1;
     }
 
     /**
@@ -128,7 +137,7 @@ export class EpanetWrapper {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the junction
      */
-    addJunction(data: AddJunctionAction) {
+    private addJunction(data: AddJunctionAction) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Junction);
         this.project.setNodeValue(nodeIndex, NodeProperty.Elevation, data.elevation);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
@@ -140,7 +149,7 @@ export class EpanetWrapper {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the reservoir
      */
-    addReservoir(data: AddReservoirAction) {
+    private addReservoir(data: AddReservoirAction) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Reservoir);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
     }
@@ -151,7 +160,7 @@ export class EpanetWrapper {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the tank
      */
-    addTank(data: AddTankAction) {
+    private addTank(data: AddTankAction) {
         const nodeIndex = this.project.addNode(data.id, NodeType.Tank);
         this.project.setNodeValue(nodeIndex, NodeProperty.Elevation, data.elevation);
         this.project.setCoordinates(nodeIndex, data.x, data.y);
@@ -163,7 +172,7 @@ export class EpanetWrapper {
      * `try { } catch(e) { }` blocks.
      * @param data The parameters for the pipe
      */
-    addPipe(data: AddPipeAction) {
+    private addPipe(data: AddPipeAction) {
         const pipeIdx = this.project.addLink(data.id, LinkType.Pipe, data.start_node, data.end_node);
         this.project.setLinkValue(pipeIdx, LinkProperty.Length, data.length);
         if (data.vertices.length != 0) {
@@ -177,7 +186,7 @@ export class EpanetWrapper {
         }
     }
 
-    pipeProperties(data: SetPipePropertiesAction) {
+    private pipeProperties(data: SetPipePropertiesAction) {
         const pipeIdx = this.project.getLinkIndex(data.old_id);
         this.project.setLinkValue(pipeIdx, LinkProperty.Diameter, data.diameter);
         this.project.setLinkValue(pipeIdx, LinkProperty.Length, data.length);
@@ -190,17 +199,17 @@ export class EpanetWrapper {
         this.project.setLinkValue(pipeIdx, LinkProperty.MinorLoss, data.loss_coefficient);
     }
 
-    junctionProperties(data: SetJunctionPropertiesAction) {
+    private junctionProperties(data: SetJunctionPropertiesAction) {
         const junctionIdx = this.project.getNodeIndex(data.old_id);
         this.project.setNodeValue(junctionIdx, NodeProperty.Elevation, data.elevation);
     }
 
-    reservoirProperties(data: SetReservoirPropertiesAction) {
+    private reservoirProperties(data: SetReservoirPropertiesAction) {
         const reservoirIdx = this.project.getNodeIndex(data.old_id);
         this.project.setNodeValue(reservoirIdx, NodeProperty.Elevation, data.total_head);
     }
 
-    getAllNodesGeoJSON(): {
+    public getAllNodesGeoJSON(): {
         junctions: NodeGeoJSON,
         tanks: NodeGeoJSON,
         reservoirs: NodeGeoJSON,
@@ -255,7 +264,7 @@ export class EpanetWrapper {
     }
 
     // TODO: also handle other link types, not just LinkType.Pipe
-    getPipesGeoJSON(utm_zone: string): FeatureCollection<Geometry, { id: string }> {
+    public getPipesGeoJSON(utm_zone: string): FeatureCollection<Geometry, { id: string }> {
         const pipesGeoJSON: GeoJSON<Geometry, { id: string }> = {
             type: "FeatureCollection",
             features: [],
@@ -294,7 +303,7 @@ export class EpanetWrapper {
         return pipesGeoJSON;
     }
 
-    getNodeCoords(nodeId: string): { x: number, y: number } {
+    public getNodeCoords(nodeId: string): { x: number, y: number } {
         const nodeIdx = this.project.getNodeIndex(nodeId);
         const coords = this.project.getCoordinates(nodeIdx);
         return coords;
@@ -302,7 +311,7 @@ export class EpanetWrapper {
 
     // TODO: dont return an action, instead define a new type in common.ts for
     // pipe properties. Use that for both get and set.
-    getPipeProperties(id: string): SetPipePropertiesAction {
+    public getPipeProperties(id: string): SetPipePropertiesAction {
         const pipeIdx = this.project.getLinkIndex(id);
         const diameter = this.project.getLinkValue(pipeIdx, LinkProperty.Diameter);
         const length = this.project.getLinkValue(pipeIdx, LinkProperty.Length);
@@ -327,12 +336,12 @@ export class EpanetWrapper {
         }
     }
 
-    deletePipe(id: string) {
+    private deletePipe(id: string) {
         const pipeIdx = this.project.getLinkIndex(id);
         this.project.deleteLink(pipeIdx, ActionCodeType.Conditional);
     }
 
-    getJunctionProperties(id: string): SetJunctionPropertiesAction {
+    public getJunctionProperties(id: string): SetJunctionPropertiesAction {
         const junctionIdx = this.project.getNodeIndex(id);
         const elevation = this.project.getNodeValue(junctionIdx, NodeProperty.Elevation);
         return {
@@ -343,7 +352,7 @@ export class EpanetWrapper {
         }
     }
 
-    getReservoirProperties(id: string): SetReservoirPropertiesAction {
+    public getReservoirProperties(id: string): SetReservoirPropertiesAction {
         const reservoirIdx = this.project.getNodeIndex(id);
         const total_head = this.project.getNodeValue(reservoirIdx, NodeProperty.Elevation);
         return {
@@ -354,7 +363,7 @@ export class EpanetWrapper {
         }
     }
 
-    deleteJunction(id: string) {
+    private deleteJunction(id: string) {
         const junctionIdx = this.project.getNodeIndex(id);
         this.project.deleteNode(junctionIdx, ActionCodeType.Conditional);
     }

@@ -76,6 +76,20 @@ export class DbProject {
         this.uuid = uuid;
     }
 
+    public getDbInp(): string | null {
+        const db = getDb();
+        const inp_result = db.prepare('SELECT snapshot_inp FROM project_snapshots WHERE project_uuid = @project_uuid AND edit_id = @edit_id').get({
+            project_uuid: this.uuid,
+            edit_id: this.currentSnapshotId,
+        });
+        const inp_parsed = z.object({ snapshot_inp: z.string() }).safeParse(inp_result);
+        if (inp_parsed.success) {
+            return inp_parsed.data.snapshot_inp;
+        } else {
+            return null;
+        }
+    }
+
     addEdit(edit: EpanetEdit): boolean {
         const db = getDb();
         try {

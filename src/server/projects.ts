@@ -151,7 +151,6 @@ export function handleClientWebSocketError(ws: WSContext<WebSocket>) {
     handleClientWebSocketClose(ws);
 }
 
-// TODO: heavily refactor this to even more of a state machine.
 export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, message: MessageEvent<WSMessageReceive>) {
     const str = z.string().parse(message.data);
     const obj = JSON.parse(str);
@@ -219,7 +218,6 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, message: 
                     }
                     return;
                 } else if (packet.type == "epanet_action_sb") {
-                    const backup = state.epanet.clone();
                     try {
                         let resp: ClientboundPacket = { type: "empty_cb" };
                         state.epanet.applyAction(packet.data);
@@ -254,7 +252,25 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, message: 
                         // should already know that because they also have an EPANET model,
                         // but just in case we could report it back
                         // console.log(JSON.stringify(err));
-                        state.epanet = backup;
+                        // TODO: optimized error handling. Specifically, remove the clone()
+                        // call above the try block, and instead effectively do project
+                        // initialization again. Cost should be about the same or cheaper,
+                        // since clone() is implemented using saveInp() then fromInp().
+                        // Project init would just be fromInp() then a handful of dirt
+                        // cheap applyAction() calls. Even a thousand edit long tree would
+                        // likely be faster than one clone() call.
+                        const latestEditId = state.db.currentEditId;
+                        const currentSnapshotId = state.db.currentSnapshotId;
+                        // TODO: get INP, apply edits?
+                        const chronoEdits = state.editTree.getChronologicalWithLastChild(state.db.currentEditId);
+                        const latest_inp = state.db.getDbInp();
+                        if (latest_inp == null) {
+                            throw new Error('Fatal error: when trying to restore a backup, no INP file could be loaded');
+                        }
+                        state.epanet = EpanetWrapper.fromInp(latest_inp, state.db.utmZone);
+                        for(const edit of chronoEdits) {
+                            state.epanet.applyAction(edit.action);
+                        }
                     }
                 } else if (packet.type == "track_edit_sb") {
                     // TODO: rebuild tree, tell clients the new state
@@ -279,6 +295,8 @@ export function handleClientWebSocketMessage(ws: WSContext<WebSocket>, message: 
                         };
                         state.broadcast(resp);
                     } else {
+                        // TODO: also roll back on the server side. Doesn't seem like anything
+                        // happens right now.
                         const editArrays = state.db.getSnapshotEditArrays(snapshotId);
                         if (editArrays == null) {
                             // TODO: inform clients of the error

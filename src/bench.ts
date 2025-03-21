@@ -1,11 +1,10 @@
 import { z } from "zod";
 import SyncEpanetState from "./client/state/SyncEpanetState";
-import { ClientboundPacket, EpanetEditCb } from "./packets/clientbound";
+import { ClientboundPacket } from "./packets/clientbound";
 import type { EpanetActionSb, LoginRequestSb, SetCurrentProjectSb } from "./packets/serverbound";
 import { waitForDebugger } from "inspector";
-import { debug } from "util";
 
-waitForDebugger();
+// waitForDebugger();
 
 const connectStart = Date.now();
 const ws = new WebSocket('http://localhost:3000/ws');
@@ -13,7 +12,7 @@ const syncState = new SyncEpanetState(ws, 'utm15n');
 // TODO: send loginrequest, receive loginsuccess, send set current project,
 // then set up SyncEpanetState to receive init
 
-const JUNCTION_COUNT = 100;
+const JUNCTION_COUNT = 10_000;
 
 function runBenchmark() {
     let receivedCount = 0;
@@ -50,7 +49,7 @@ function handleLoginMessages(msg: MessageEvent<any>) {
     if (packet.type == "login_success_cb") {
         const setProject: SetCurrentProjectSb = {
             type: "set_current_project_sb",
-            project_uuid: packet.projects[0],
+            project_uuid: packet.projects[1],
         };
         ws.send(JSON.stringify(setProject));
     } else if (packet.type == "track_edit_cb") {

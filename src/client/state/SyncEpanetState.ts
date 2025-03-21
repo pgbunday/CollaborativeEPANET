@@ -93,6 +93,11 @@ export default class SyncEpanetState {
       try {
         if (packet.type == "epanet_edit_cb") {
           this.syncedEpanet.applyAction(packet.data.action);
+          if (this.localEpanet.numEditsSinceInp == this.syncedEpanet.numEditsSinceInp - 1) {
+            this.localEpanet.applyAction(packet.data.action);
+          } else {
+            this.localEpanet = this.syncedEpanet.clone();
+          }
         } else if (packet.type == "track_edit_cb") {
           const { edit_id, snapshot_id, snapshot_data } = packet;
           if (snapshot_id != this.currentSnapshotId && snapshot_data) {
@@ -118,11 +123,9 @@ export default class SyncEpanetState {
             }
             this.currentEditId = edit_id;
           }
+          // regardless of whether this was a new INP or not, just reset the local state
+          this.localEpanet = this.syncedEpanet.clone();
         }
-
-        // TODO: Currently, I throw out every local change by cloning synced state.
-        // Is there a cheaper way to get the same resulting functionality?
-        this.localEpanet = this.syncedEpanet.clone();
         return true;
       } catch (e) {
         console.error("Error in SyncEpanetState.applySynced():", e);
