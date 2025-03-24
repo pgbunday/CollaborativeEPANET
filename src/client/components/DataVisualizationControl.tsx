@@ -39,7 +39,7 @@ function DataVisualizationComponent({ mapState }: { mapState: MapState }) {
         return () => {
             //
         }
-    }, [showLabels, pressureLow, pressureHigh, nodeView])
+    }, [showLabels, pressureLow, pressureHigh, nodeView, pressureUnits])
 
     let nodeControls;
     if (nodeView == 'pressure') {
