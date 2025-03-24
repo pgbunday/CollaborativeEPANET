@@ -32,6 +32,7 @@ import Text from 'ol/style/Text.js';
 import { turbo_color } from '../../colors.js';
 import ReservoirPropertiesPopup from '../components/ReservoirPropertiesPopup.js';
 import DataVisualizationControl from '../components/DataVisualizationControl.js';
+import { type Pressure } from '../../units.js';
 
 useGeographic();
 
@@ -259,13 +260,13 @@ export default class MapState {
         })
     }
 
-    public setNodeStyles({ showLabels, pressureOptions }: { showLabels: boolean, pressureOptions: { low: number, high: number } | undefined }) {
+    public setNodeStyles({ showLabels, pressureOptions }: { showLabels: boolean, pressureOptions: { low: Pressure, high: Pressure, unit_fn: (x: number) => Pressure } | undefined }) {
         // Allow nodes to be individually colored
         const m: Map<string, [number, number, number]> = new Map<string, [number, number, number]>();
         if (pressureOptions) {
             const pressures = this.epanetState.local.getNodePressures();
             for (const { id, pressure } of pressures) {
-                const clamped = (pressure - pressureOptions.low) / (pressureOptions.high - pressureOptions.low);
+                const clamped = (pressure.value - pressureOptions.low.value) / (pressureOptions.high.value - pressureOptions.low.value);
                 m.set(id, turbo_color(clamped));
             }
         } else {

@@ -151,6 +151,26 @@ export function kpa(amount: number): Pressure {
     }
 }
 
+export function pascal(amount: number): Pressure {
+    return {
+        value: amount,
+        kilograms: 1,
+        meters: -1,
+        seconds: -2,
+    }
+}
+
+export function meter_pressure_head(amount: number): Pressure {
+    // https://en.wikipedia.org/wiki/Pressure_head
+    // psi (height) = (fluid pressure p) / ((fluid density rho) * (acceleration due to gravity g))
+    // So (fluid presure p) = psi * rho * g
+    // Water density in kg / m^3 is approximately 997. Changes with temperature
+    // g can vary slightly by location, but standard definition is 9.80665
+    // In MKS, we end up with:
+    const pa = amount * 997 * 9.80665;
+    return pascal(pa);
+}
+
 export function divide(unit1: Unit, unit2: Unit): Unit {
     const value = unit1.value / unit2.value;
     let seconds: number | undefined;

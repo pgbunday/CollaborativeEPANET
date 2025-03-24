@@ -3,6 +3,8 @@ import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry }
 import { utmToLongLat } from "../coords.js";
 import type { LinkStatus, EpanetAction, AddJunctionAction, AddReservoirAction, AddTankAction, AddPipeAction, SetPipePropertiesAction, SetJunctionPropertiesAction, SetReservoirPropertiesAction } from "../packets/common.js";
 import type { EpanetEdit } from "../packets/clientbound.js";
+import { cfs, meter_pressure_head, psi, type Pressure } from "../units.js";
+import { ModelFlowUnits } from "../../units.js";
 
 const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
@@ -58,13 +60,29 @@ export class EpanetWrapper {
         this.project.solveH();
     }
 
-    public getNodePressures(): { id: string, pressure: number }[] {
+    public getFlowUnits(): { value: FlowUnits, metric: boolean } {
+        const f = this.project.getFlowUnits();
+        if (f == FlowUnits.CFS || f == FlowUnits.GPM || f == FlowUnits.MGD || f == FlowUnits.IMGD || f == FlowUnits.AFD) {
+            return { value: f, metric: false }
+        } else {
+            return { value: f, metric: true }
+        }
+    }
+
+    public getNodePressures(): { id: string, pressure: Pressure }[] {
+        const modelFlowUnits = this.getFlowUnits();
         const totalCount = this.project.getCount(CountType.NodeCount);
         const pressures = [];
         for (let i = 1; i <= totalCount; ++i) {
             const nodeId = this.project.getNodeId(i);
             const nodePressure = this.project.getNodeValue(i, NodeProperty.Pressure);
-            pressures.push({ id: nodeId, pressure: nodePressure });
+            if (modelFlowUnits.metric) {
+                // EPANET measures metric pressure in meters (pressure head)
+                pressures.push({ id: nodeId, pressure: meter_pressure_head(nodePressure) });
+            } else {
+                // Imperial pressure is PSI
+                pressures.push({ id: nodeId, pressure: psi(nodePressure) });
+            }
         }
         return pressures;
     }
