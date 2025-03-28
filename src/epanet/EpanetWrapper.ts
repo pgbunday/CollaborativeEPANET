@@ -1,16 +1,28 @@
-import { ActionCodeType, CountType, FlowUnits, HeadLossType, InitHydOption, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, Workspace } from "epanet-js";
+import { ActionCodeType, CountType, FlowUnits, HeadLossType, InitHydOption, LinkProperty, LinkStatusType, LinkType, NodeProperty, NodeType, Project, TimeParameter, Workspace } from "epanet-js";
 import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry } from "geojson";
 import { utmToLongLat } from "../coords.js";
 import type { LinkStatus, EpanetAction, AddJunctionAction, AddReservoirAction, AddTankAction, AddPipeAction, SetPipePropertiesAction, SetJunctionPropertiesAction, SetReservoirPropertiesAction } from "../packets/common.js";
-import type { EpanetEdit } from "../packets/clientbound.js";
-import { cfs, meter_pressure_head, psi, type Pressure } from "../units.js";
-import { ModelFlowUnits } from "../../units.js";
+import { meter_pressure_head, psi, type Flow, type Length, type Pressure, type Velocity } from "../units.js";
 
 const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
 const OUTPUT_FILENAME = 'out.bin';
 
 type NodeGeoJSON = FeatureCollection<Geometry, { id: string }>;
+
+export type SimulationStatus = {
+    hydraulicTime: number
+    nodes: Map<string, { pressure: Pressure, demand: Flow }>
+    links: Map<string, { flow: Flow, diameter: Length, length: Length, velocity: Velocity }>
+}
+
+function defaultSimulationStatus(): SimulationStatus {
+    return {
+        hydraulicTime: -1,
+        nodes: new Map(),
+        links: new Map(),
+    }
+}
 
 export class EpanetWrapper {
     public readonly workspace: Workspace
@@ -60,13 +72,58 @@ export class EpanetWrapper {
         this.project.solveH();
     }
 
-    public getFlowUnits(): { value: FlowUnits, metric: boolean } {
+    public getFlowUnits(): { value: FlowUnits, flow_fn: (x: number) => Flow, metric: boolean } {
         const f = this.project.getFlowUnits();
         if (f == FlowUnits.CFS || f == FlowUnits.GPM || f == FlowUnits.MGD || f == FlowUnits.IMGD || f == FlowUnits.AFD) {
+            const metric = false;
+            // TODO: figure out how to get flow_fn. Probably just need 10 separate if statements.
             return { value: f, metric: false }
         } else {
             return { value: f, metric: true }
         }
+    }
+
+    public runSimulation(): SimulationStatus[] {
+        this.openH();
+        this.initH();
+        const output: SimulationStatus[] = [];
+        let currentStatus = defaultSimulationStatus();
+        let lastRunH = this.project.getTimeParameter(TimeParameter.StartTime);
+        currentStatus.hydraulicTime = lastRunH;
+        const totalNodes = this.project.getCount(CountType.NodeCount);
+        const totalLinks = this.project.getCount(CountType.LinkCount);
+        const flowUnits = this.getFlowUnits();
+        while (true) {
+            const currentRunH = this.runH();
+            if (currentRunH != lastRunH) {
+                output.push(currentStatus);
+                currentStatus = defaultSimulationStatus();
+                currentStatus.hydraulicTime = currentRunH;
+            }
+
+            // gather data, store in currentStatus
+            for (let i = 1; i <= totalNodes; ++i) {
+                const id = this.project.getNodeId(i);
+                const pressure = this.project.getNodeValue(i, NodeProperty.Pressure);
+                const demand = this.project.getNodeValue(i, NodeProperty.Demand);
+                if (flowUnits.metric) {
+                    currentStatus.nodes.set(id, {
+                        pressure: meter_pressure_head(pressure),
+                        demand: 
+                    })
+                }
+            }
+            for (let i = 1; i <= totalLinks; ++i) {
+                const id = this.project.getLinkId(i);
+            }
+
+            if (this.nextH() == 0) {
+                // at the end of regular simulation, so push the data and break
+                output.push(currentStatus);
+                break;
+            }
+        }
+        return output;
     }
 
     public getNodePressures(): { id: string, pressure: Pressure }[] {

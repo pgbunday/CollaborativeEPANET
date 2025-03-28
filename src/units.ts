@@ -49,6 +49,13 @@ export interface Pressure extends Unit {
     seconds: -2
 }
 
+export interface Velocity extends Unit {
+    value: number,
+    kilograms?: 0,
+    seconds: -1,
+    meters: 1,
+}
+
 export function foot(amount: number): Length {
     const as_meters = amount * 12 * 2.54 / 100;
     return {
@@ -327,6 +334,14 @@ export function cmd(amount: number): Flow {
     return divide(cubic_meters, day(1)) as Flow;
 }
 
+export function fps(amount: number): Velocity {
+    return divide(foot(amount), second(1)) as Velocity;
+}
+
+export function mps(amount: number): Velocity {
+    return divide(meter(amount), second(1)) as Velocity;
+}
+
 // Basic model for conversion: Multiply by the reciprocal of a 1 quantity
 // of the output unit
 export function as_gpm(amount: Flow): number {
@@ -343,6 +358,10 @@ export function convert_flow(amount: Flow, out: (x: number) => Flow): number {
 
 export function convert_pressure(amount: Pressure, out: (x: number) => Pressure): number {
     return multiply(amount, reciprocal(out(1))).value
+}
+
+export function convert_velocity(amount: Velocity, out: (x: number) => Velocity): number {
+    return multiply(amount, reciprocal(out(1))).value;
 }
 
 export function add(unit1: Unit, unit2: Unit): Unit {
