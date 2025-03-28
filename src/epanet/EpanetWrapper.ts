@@ -284,6 +284,11 @@ export class EpanetWrapper {
             roughness,
         }
     }
+    /**
+     * removes the given pipes from the network
+     * @param id the unique identifier of the pipe to delete
+     */
+    
 
     deletePipe(id: string) {
         const pipeIdx = this.project.getLinkIndex(id);
