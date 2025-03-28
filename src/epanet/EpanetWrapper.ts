@@ -4,7 +4,6 @@ import { utmToLongLat } from "../coords.js";
 import type { LinkStatus, EpanetAction, AddJunctionAction, AddReservoirAction, AddTankAction, AddPipeAction, SetPipePropertiesAction, SetJunctionPropertiesAction, SetReservoirPropertiesAction } from "../packets/common.js";
 import type { EpanetEdit } from "../packets/clientbound.js";
 import { cfs, meter_pressure_head, psi, type Pressure } from "../units.js";
-import { ModelFlowUnits } from "../../units.js";
 
 const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
@@ -93,7 +92,7 @@ export class EpanetWrapper {
     }
 
     /**
-     * 
+     *
      * @param inp_file An INP file built with EPANET
      * @returns A new object built with the INP file
      */
