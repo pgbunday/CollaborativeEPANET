@@ -18,8 +18,9 @@ export class EditTree {
         this.edits = new Map();
     }
 
-    // Creates a new reference with new maps, where the EpanetEdit objects are
-    // the same
+    /** Makes shallow copy of EditTree. Creates a new reference with new maps, where the EpanetEdit objects are the same
+     * @returns a new EditTree with the same edits
+     */
     shallowCopy(): EditTree {
         const tree = new EditTree();
         for(const [_, edit] of this.edits) {
@@ -28,6 +29,9 @@ export class EditTree {
         return tree;
     }
 
+    /** Adds an edit node to tree. If its a parent then treated like a root, otherwise added as a child  
+     * @param edit EpanetEdit is the object that needs to be added
+     */
     addNode(edit: EpanetEdit) {
         if (edit.parent_id == edit.edit_id) {
             // node is its own parent, so a root node
@@ -57,6 +61,10 @@ export class EditTree {
         }
     }
 
+    /** Gets the chronological list of edits which shows the lastChildId edit 
+     * @param lastChildId is the ID of the last child edit
+     * @returns the list of edits in regular chronological form 
+     */
     getChronologicalWithLastChild(lastChildId: number): EpanetEdit[] {
         const reverseChronological: EpanetEdit[] = [];
         let currentEditId: number | undefined = lastChildId;
