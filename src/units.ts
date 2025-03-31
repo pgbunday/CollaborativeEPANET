@@ -87,6 +87,11 @@ export function centimeter(amount: number): Length {
     }
 }
 
+export function millimeter(amount: number): Length {
+    const as_meters = amount / 1000;
+    return { value: as_meters, meters: 1 }
+}
+
 export function liter(amount: number): Volume {
     const as_meters_cubed = amount * 1000 / 100 / 100 / 100;
     return {

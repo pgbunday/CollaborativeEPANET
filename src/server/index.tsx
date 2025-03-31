@@ -145,12 +145,20 @@ app.get('/static/client.js', async (c) => {
   return await serveFile(c, 'build-client/client.js', 'text/javascript');
 });
 
+app.get('/static/client.js.map', async (c) => {
+  return await serveFile(c, 'build-client/client.js.map', 'application/json');
+})
+
 app.get('/static/create_project.js', async (c) => {
   return await serveFile(c, 'build-client/create_project.js', 'text/javascript');
 })
 
 app.get('/static/client.css', async (c) => {
   return await serveFile(c, 'build-client/client.css', 'text/css');
+})
+
+app.get('/static/client.css.map', async (c) => {
+  return await serveFile(c, 'build-client/client.css.map', 'application/json')
 })
 
 app.get('/static/create_project.css', async (c) => {

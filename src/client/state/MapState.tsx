@@ -33,6 +33,7 @@ import { turbo_color } from '../../colors.js';
 import ReservoirPropertiesPopup from '../components/ReservoirPropertiesPopup.js';
 import DataVisualizationControl from '../components/DataVisualizationControl.js';
 import { type Pressure } from '../../units.js';
+import type { SimulationStatus } from '../../epanet/EpanetWrapper.js';
 
 useGeographic();
 
@@ -260,23 +261,30 @@ export default class MapState {
         })
     }
 
-    public setNodeStyles({ showLabels, pressureOptions }: { showLabels: boolean, pressureOptions: { low: Pressure, high: Pressure, unit_fn: (x: number) => Pressure } | undefined }) {
-        // Allow nodes to be individually colored
-        const m: Map<string, [number, number, number]> = new Map<string, [number, number, number]>();
-        if (pressureOptions) {
-            const pressures = this.epanetState.local.getNodePressures();
-            for (const { id, pressure } of pressures) {
+    public setStyles({ showLabels, pressureOptions, hydraulicTimeIndex: hydraulicTimeIndex, data }: {
+        showLabels: boolean,
+        pressureOptions: {
+            low: Pressure,
+            high: Pressure,
+            unit_fn: (x: number) => Pressure
+        } | undefined,
+        hydraulicTimeIndex: number,
+        data: SimulationStatus[]
+    }) {
+        const nodeColors: Map<string, [number, number, number]> = new Map();
+        if (pressureOptions && hydraulicTimeIndex >= 0) {
+            const results = data[hydraulicTimeIndex];
+            for (const [id, properties] of results.nodes) {
+                const pressure = properties.pressure;
                 const clamped = (pressure.value - pressureOptions.low.value) / (pressureOptions.high.value - pressureOptions.low.value);
-                m.set(id, turbo_color(clamped));
+                nodeColors.set(id, turbo_color(clamped));
             }
-        } else {
-            // do nothing, the style function will fall back to plain white
         }
-        const f: StyleLike = (feature, resolution) => {
+        const nodeStyle: StyleLike = (feature, _resolution) => {
             const id = feature.getProperties().id;
             let fillColorStr = 'rgb(255 255 255)';
-            if (m.get(id)) {
-                const color = m.get(id)!;
+            if (nodeColors.get(id)) {
+                const color = nodeColors.get(id)!;
                 fillColorStr = 'rgb( ' + Math.floor(color[0] * 255) + ' ' + Math.floor(color[1] * 255) + ' ' + Math.floor(color[2] * 255) + ')';
             }
             let text = undefined;
@@ -308,11 +316,65 @@ export default class MapState {
                 }),
                 text,
             })
-        };
-        this.junctionsLayer.setStyle(f);
-        this.reservoirsLayer.setStyle(f);
-        this.tanksLayer.setStyle(f);
+        }
+        this.junctionsLayer.setStyle(nodeStyle);
+        this.reservoirsLayer.setStyle(nodeStyle);
+        this.tanksLayer.setStyle(nodeStyle);
     }
+
+    // public setNodeStyles({ showLabels, pressureOptions }: { showLabels: boolean, pressureOptions: { low: Pressure, high: Pressure, unit_fn: (x: number) => Pressure } | undefined }) {
+    //     // Allow nodes to be individually colored
+    //     const m: Map<string, [number, number, number]> = new Map<string, [number, number, number]>();
+    //     if (pressureOptions) {
+    //         const pressures = this.epanetState.local.getNodePressures();
+    //         for (const { id, pressure } of pressures) {
+    //             const clamped = (pressure.value - pressureOptions.low.value) / (pressureOptions.high.value - pressureOptions.low.value);
+    //             m.set(id, turbo_color(clamped));
+    //         }
+    //     } else {
+    //         // do nothing, the style function will fall back to plain white
+    //     }
+    //     const f: StyleLike = (feature, resolution) => {
+    //         const id = feature.getProperties().id;
+    //         let fillColorStr = 'rgb(255 255 255)';
+    //         if (m.get(id)) {
+    //             const color = m.get(id)!;
+    //             fillColorStr = 'rgb( ' + Math.floor(color[0] * 255) + ' ' + Math.floor(color[1] * 255) + ' ' + Math.floor(color[2] * 255) + ')';
+    //         }
+    //         let text = undefined;
+    //         if (showLabels) {
+    //             text = new Text({
+    //                 text: feature.getProperties().id,
+    //                 backgroundFill: new Fill({
+    //                     color: 'white',
+    //                 }),
+    //                 backgroundStroke: new Stroke({
+    //                     color: 'black',
+    //                     width: 4,
+    //                 }),
+    //                 offsetY: 32,
+    //                 font: '12px sans-serif',
+    //                 padding: [4, 8, 4, 8]
+    //             })
+    //         }
+    //         return new Style({
+    //             image: new CircleStyle({
+    //                 radius: 14,
+    //                 stroke: new Stroke({
+    //                     color: 'black',
+    //                     width: 4,
+    //                 }),
+    //                 fill: new Fill({
+    //                     color: fillColorStr,
+    //                 })
+    //             }),
+    //             text,
+    //         })
+    //     };
+    //     this.junctionsLayer.setStyle(f);
+    //     this.reservoirsLayer.setStyle(f);
+    //     this.tanksLayer.setStyle(f);
+    // }
 
     private createBasePopup(): [Overlay, HTMLDivElement, () => void] {
         const container = document.createElement('div');

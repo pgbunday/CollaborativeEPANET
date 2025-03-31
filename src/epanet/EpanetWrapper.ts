@@ -2,7 +2,7 @@ import { ActionCodeType, CountType, FlowUnits, HeadLossType, InitHydOption, Link
 import type { Feature, FeatureCollection, GeoJSON, GeoJsonProperties, Geometry } from "geojson";
 import { utmToLongLat } from "../coords.js";
 import type { LinkStatus, EpanetAction, AddJunctionAction, AddReservoirAction, AddTankAction, AddPipeAction, SetPipePropertiesAction, SetJunctionPropertiesAction, SetReservoirPropertiesAction } from "../packets/common.js";
-import { meter_pressure_head, psi, type Flow, type Length, type Pressure, type Velocity } from "../units.js";
+import { afd, cfs, cmd, cmh, foot, fps, gpm, imgd, inch, lpm, lps, meter, meter_pressure_head, mgd, millimeter, mld, mps, psi, type Flow, type Length, type Pressure, type Velocity } from "../units.js";
 
 const INP_FILENAME = 'project.inp';
 const REPORT_FILENAME = 'report.rpt';
@@ -74,12 +74,32 @@ export class EpanetWrapper {
 
     public getFlowUnits(): { value: FlowUnits, flow_fn: (x: number) => Flow, metric: boolean } {
         const f = this.project.getFlowUnits();
-        if (f == FlowUnits.CFS || f == FlowUnits.GPM || f == FlowUnits.MGD || f == FlowUnits.IMGD || f == FlowUnits.AFD) {
-            const metric = false;
-            // TODO: figure out how to get flow_fn. Probably just need 10 separate if statements.
-            return { value: f, metric: false }
+        if (f == FlowUnits.CFS) {
+            return {
+                value: f,
+                metric: false,
+                flow_fn: cfs,
+            }
+        } else if (f == FlowUnits.GPM) {
+            return { value: f, metric: false, flow_fn: gpm }
+        } else if (f == FlowUnits.MGD) {
+            return { value: f, metric: false, flow_fn: mgd }
+        } else if (f == FlowUnits.IMGD) {
+            return { value: f, metric: false, flow_fn: imgd }
+        } else if (f == FlowUnits.AFD) {
+            return { value: f, metric: false, flow_fn: afd }
+        } else if (f == FlowUnits.LPS) {
+            return { value: f, metric: true, flow_fn: lps }
+        } else if (f == FlowUnits.LPM) {
+            return { value: f, metric: true, flow_fn: lpm }
+        } else if (f == FlowUnits.MLD) {
+            return { value: f, metric: true, flow_fn: mld }
+        } else if (f == FlowUnits.CMH) {
+            return { value: f, metric: true, flow_fn: cmh }
+        } else if (f == FlowUnits.CMD) {
+            return { value: f, metric: true, flow_fn: cmd }
         } else {
-            return { value: f, metric: true }
+            throw new Error('Unrecognized FlowUnits from epanet:', f);
         }
     }
 
@@ -104,17 +124,42 @@ export class EpanetWrapper {
             // gather data, store in currentStatus
             for (let i = 1; i <= totalNodes; ++i) {
                 const id = this.project.getNodeId(i);
-                const pressure = this.project.getNodeValue(i, NodeProperty.Pressure);
-                const demand = this.project.getNodeValue(i, NodeProperty.Demand);
+                const nodePressure = this.project.getNodeValue(i, NodeProperty.Pressure);
+                const nodeDemand = this.project.getNodeValue(i, NodeProperty.Demand);
                 if (flowUnits.metric) {
                     currentStatus.nodes.set(id, {
-                        pressure: meter_pressure_head(pressure),
-                        demand: 
+                        pressure: meter_pressure_head(nodePressure),
+                        demand: flowUnits.flow_fn(nodeDemand),
+                    });
+                } else {
+                    currentStatus.nodes.set(id, {
+                        pressure: psi(nodePressure),
+                        demand: flowUnits.flow_fn(nodeDemand),
                     })
                 }
             }
             for (let i = 1; i <= totalLinks; ++i) {
                 const id = this.project.getLinkId(i);
+                // flow, diameter, length, velocity
+                const linkFlow = this.project.getLinkValue(i, LinkProperty.Flow);
+                const linkDiameter = this.project.getLinkValue(i, LinkProperty.Diameter);
+                const linkLength = this.project.getLinkValue(i, LinkProperty.Length);
+                const linkVelocity = this.project.getLinkValue(i, LinkProperty.Velocity);
+                if (flowUnits.metric) {
+                    currentStatus.links.set(id, {
+                        diameter: millimeter(linkDiameter),
+                        flow: flowUnits.flow_fn(linkFlow),
+                        length: meter(linkLength),
+                        velocity: mps(linkVelocity),
+                    });
+                } else {
+                    currentStatus.links.set(id, {
+                        diameter: inch(linkDiameter),
+                        flow: flowUnits.flow_fn(linkFlow),
+                        length: foot(linkLength),
+                        velocity: fps(linkVelocity),
+                    })
+                }
             }
 
             if (this.nextH() == 0) {
