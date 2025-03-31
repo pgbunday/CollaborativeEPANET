@@ -37,6 +37,7 @@ function DataVisualizationComponent({ mapState }: { mapState: MapState }) {
     const [pressureUnits, setPressureUnits] = useState<PressureUnits>(modelPressureUnits);
     const [simulationResults, setSimulationResults] = useState<SimulationStatus[]>([]);
     const [hydraulicTimeIndex, setHydraulicTimeIndex] = useState(-1);
+    const [hydraulicTimeOptions, setHydraulicTimeOptions] = useState<JSX.Element[]>([]);
 
     useEffect(() => {
         let pressureOptions = undefined;
@@ -47,23 +48,43 @@ function DataVisualizationComponent({ mapState }: { mapState: MapState }) {
                 unit_fn: getOutFn(pressureUnits),
             }
         }
-        console.log('in useEffect');
-        console.log('hydraulicTimeIndex:', hydraulicTimeIndex);
         mapState.setStyles({ showLabels, pressureOptions, data: simulationResults, hydraulicTimeIndex })
         return () => {
             //
         }
-    }, [showLabels, pressureLow, pressureHigh, nodeView, pressureUnits, simulationResults, hydraulicTimeIndex])
+    }, [showLabels, pressureLow, pressureHigh, nodeView, pressureUnits, simulationResults, hydraulicTimeIndex, hydraulicTimeOptions])
 
-    let nodeControls;
-    if (nodeView == 'pressure') {
-        const hydraulicTimeOptions: JSX.Element[] = [];
-        simulationResults.entries().map(([i, r]) => {
-            const item = <option key={String(i)} value={String(i)}>{r.hydraulicTime}</option>;
-            hydraulicTimeOptions.push(item);
-        });
-        console.log('hydraulicTimeOptions:', hydraulicTimeOptions)
-        nodeControls = <>
+    return <div>
+        <button onClick={() => {
+            setNodeView('pressure');
+            const results = mapState.epanetState.local.runSimulation();
+            console.log('simulationResults:', results);
+            setSimulationResults(results);
+            setHydraulicTimeIndex(0);
+            const hydraulicOptions: JSX.Element[] = [];
+            for (let i = 0; i < results.length; ++i) {
+                // hTime is progress through the whole simulation, in seconds
+                const hTime = results[i].hydraulicTime;
+                const totalMinutes = Math.floor(hTime / 60);
+                const minutes = totalMinutes % 60;
+                const hours = Math.floor((totalMinutes - minutes) / 60);
+                const option = <option value={i}>{hours}:{String(minutes).padStart(2, '0')}</option>;
+                hydraulicOptions.push(option);
+            }
+            setHydraulicTimeOptions(hydraulicOptions);
+        }}>Run Hydraulics</button>
+        <br />
+        <label>Node Labels <input type="checkbox" checked={showLabels} onClick={() => {
+            setShowLabels(!showLabels);
+        }} /></label>
+        <br />
+        <select value={nodeView} onChange={e => setNodeView((e.target as HTMLInputElement).value as NodeView)} >
+            <option value="no-view">No View</option>
+            <option value="pressure">Pressure</option>
+            <option value="elevation">Elevation</option>
+        </select>
+        <br />
+        {nodeView == 'pressure' && <>
             <select value={hydraulicTimeIndex} onChange={(e) => {
                 const newIndex = Number((e.target as HTMLOptionElement).value);
                 setHydraulicTimeIndex(newIndex);
@@ -90,39 +111,7 @@ function DataVisualizationComponent({ mapState }: { mapState: MapState }) {
                 <option value="kpa">kPa</option>
                 <option value="m">Meter</option>
             </select>
-        </>
-    }
-    console.log('nodeControls: ', nodeControls);
-
-    return <div>
-        <button onClick={() => {
-            // openH() and initH() have already been called
-            // TODO: synchronize with actual hydraulic state
-            // ohhhh there are problems here
-            // mapState.epanetState.local gets recreated all the time, so I'll need
-            // to somehow keep track of where in the hydraulic simulation is being
-            // rendered, and step through to that point if hydraulics were closed.
-            //
-            // Current implementation may not have that issue, but I'll leave the
-            // above comments just in case
-            setNodeView('pressure');
-            const results = mapState.epanetState.local.runSimulation();
-            console.log('simulationResults:', results);
-            setSimulationResults(results);
-            setHydraulicTimeIndex(0);
-        }}>Run Hydraulics</button>
-        <br />
-        <label>Node Labels <input type="checkbox" checked={showLabels} onClick={() => {
-            setShowLabels(!showLabels);
-        }} /></label>
-        <br />
-        <select value={nodeView} onChange={e => setNodeView((e.target as HTMLInputElement).value as NodeView)} >
-            <option value="no-view">No View</option>
-            <option value="pressure">Pressure</option>
-            <option value="elevation">Elevation</option>
-        </select>
-        <br />
-        {nodeControls}
+        </>}
     </div>
 }
 
