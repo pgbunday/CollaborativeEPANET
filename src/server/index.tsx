@@ -15,7 +15,7 @@ import createAuthed, { getUserFromContext } from './authed_hono.js';
 import { z } from 'zod';
 // import sharp from 'sharp';
 import { getTileData } from './TileManager.js';
-import { handleClientWebSocketClose, handleClientWebSocketError, handleClientWebSocketMessage, handleClientWebSocketOpen } from './projects.js';
+import { handleClientWebSocketClose, handleClientWebSocketError, handleClientWebSocketMessage, handleClientWebSocketOpen } from './Project.js';
 
 const { parsed: envParsed, error: envParseError } = configDotenv();
 if (envParseError) {
@@ -213,7 +213,9 @@ app.get('/ws', upgradeWebSocket((c) => {
     onOpen: (open, ws) => { handleClientWebSocketOpen(ws); },
     onClose: (close, ws) => { handleClientWebSocketClose(ws); },
     onError: (error, ws) => { handleClientWebSocketError(ws); },
-    onMessage: (message, ws) => { handleClientWebSocketMessage(ws, message); }
+    onMessage: async (message, ws) => {
+      await handleClientWebSocketMessage(ws, message);
+    }
   }
 }));
 

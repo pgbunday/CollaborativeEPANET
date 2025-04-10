@@ -1,5 +1,5 @@
 import bcryptjs from "bcryptjs";
-import { getDb } from "./db.js";
+import { db, getDb, type DbUser } from "./db.js";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 
@@ -19,17 +19,12 @@ export const DbUserSchema = z.object({
 });
 export type DbUserSchema = z.infer<typeof DbUserSchema>;
 
-export async function getUserByUsernamePassword(username: string, password: string): Promise<DbUserSchema | null> {
-    const db = getDb();
-    try {
-        const maybe_user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-        const ret = DbUserSchema.parse(maybe_user);
-        if (await bcryptjs.compare(password, ret.hashed_password)) {
-            return ret;
-        } else {
-            return null;
-        }
-    } catch (err) {
+export async function getUserByUsernamePassword(username: string, password: string): Promise<DbUser | null> {
+    // const db = getDb();
+    const maybeUser = await db.selectFrom('users').where('username', '=', username).selectAll().executeTakeFirst();
+    if (maybeUser && await bcryptjs.compare(password, maybeUser.hashed_password)) {
+        return maybeUser;
+    } else {
         return null;
     }
 }
@@ -45,7 +40,7 @@ export function getUserByUsername(username: string): DbUserSchema | null {
     }
 }
 
-export async function insertUser(username: string, password: string): Promise<DbUserSchema | null> {
+export async function insertUser(username: string, password: string): Promise<DbUser | null> {
     const hashed_password = await hashPassword(password);
     const db = getDb();
     const now = new Date();

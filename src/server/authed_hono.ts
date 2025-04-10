@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { DbUserSchema, getUserByAuthToken, getUserByUsername } from "./auth.js";
-import { DbProject, getUserProjects } from "./db_project.js";
+import { getUserProjects } from "./db_project.js";
 import { Hono, type Context } from "hono";
 import { logger } from "hono/logger";
 import { getCookie } from "hono/cookie";
@@ -9,7 +9,8 @@ import Projects from "./components/Projects.js";
 import { html } from "hono/html";
 import Client from "./components/Client.js";
 import CreateProject from "./components/CreateProject.js";
-import { handleClientWebSocketClose, handleClientWebSocketError, handleClientWebSocketMessage, handleClientWebSocketOpen, setWsAuthenticated, setWsProjectAndSendInit } from "./projects.js";
+import { handleClientWebSocketClose, handleClientWebSocketError, handleClientWebSocketMessage, handleClientWebSocketOpen, Project, setWsAuthenticated } from "./Project.js";
+import type { DbProject } from "./db.js";
 
 export function getUserFromContext(c: Context): DbUserSchema | null {
     const auth_token = getCookie(c, 'auth_token');
@@ -68,7 +69,7 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
         let project: DbProject | null;
         if (name && longitude && latitude && zoom) {
             name = name.toString();
-            project = DbProject.new(name, user, Number(longitude), Number(latitude), Number(zoom));
+            project = await Project.create(name, user, Number(longitude), Number(latitude), Number(zoom));
         } else {
             project = null;
         }
@@ -79,35 +80,27 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
         }
     })
 
-    authed.get('/projects', (c) => {
+    authed.get('/projects', async (c) => {
         const user = c.get('user');
-        const projects = getUserProjects(user);
+        const projects = await getUserProjects(user);
         return c.html(html`<!DOCTYPE html>${Projects({ projects })}`);
     });
 
-    authed.get('/projects/:project_uuid', (c) => {
+    authed.get('/projects/:project_uuid', async (c) => {
         const user = c.get('user');
         const { project_uuid } = c.req.param();
-        const project = new DbProject(project_uuid);
-        if (!project) {
-            return c.redirect('/projects');
-        }
-        const role = project.getUserRole(user);
+        const role = Project.getUserRole(project_uuid, user);
         if (!role) {
             return c.redirect('/projects');
         }
-        return c.html(html`<!DOCTYPE html>${Client({ project_name: project.name, lng: project.longitude, lat: project.latitude, zoom: project.zoom, utm_zone: project.utmZone })}`)
+        const dbProject = await Project.getDb(project_uuid);
+        return c.html(html`<!DOCTYPE html>${Client({ project_name: dbProject.name, lng: dbProject.longitude, lat: dbProject.latitude, zoom: dbProject.zoom, utm_zone: dbProject.utm_zone })}`)
     });
 
     authed.post('/projects/:project_uuid/add_user', async (c) => {
         const user = c.get('user');
         const { project_uuid } = c.req.param();
-        const project = new DbProject((project_uuid));
-        if (!project) {
-            c.status(401);
-            return c.body(null);
-        }
-        const role = project.getUserRole(user);
+        const role = await Project.getUserRole(project_uuid, user);
         if (!role) {
             c.status(401);
             return c.body(null);
@@ -119,7 +112,7 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
             c.status(500);
             return c.body(null);
         }
-        if (project.addUser(otherUser, "editor")) {
+        if (await Project.addUser(project_uuid, otherUser, "editor")) {
             c.status(200);
             return c.body(null);
         } else {
@@ -134,19 +127,15 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
         // just have {}, send a message, then close the WS right away.
         const user = c.get('user');
         const { project_uuid } = c.req.param();
-        const project = new DbProject((project_uuid));
-        if (!project) {
-            return {};
-        }
-        const role = project.getUserRole(user);
+        const role = Project.getUserRole(project_uuid, user);
         if (!role) {
             return {};
         }
         return {
-            onOpen: (open, ws) => {
+            onOpen: async (open, ws) => {
                 handleClientWebSocketOpen(ws);
                 setWsAuthenticated(ws, user);
-                setWsProjectAndSendInit(ws, project);
+                await Project.connectWsAndSendInit(project_uuid, ws);
             },
             onClose: (close, ws) => {
                 handleClientWebSocketClose(ws);
@@ -154,7 +143,7 @@ export default function createAuthed(upgradeWebSocket: UpgradeWebSocket<WebSocke
             onError: (error, ws) => {
                 handleClientWebSocketError(ws);
             },
-            onMessage: (msg, ws) => {
+            onMessage: async (msg, ws) => {
                 handleClientWebSocketMessage(ws, msg);
             },
         };

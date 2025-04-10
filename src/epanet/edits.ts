@@ -2,8 +2,6 @@
 // server or the client
 
 import type { EpanetEdit } from "../packets/clientbound.js";
-import type { EpanetAction } from "../packets/common.js";
-import type { DbProjectEditSchema, DbProjectSnapshotSchema } from "../server/db_project.js";
 
 export class EditTree {
     // children maps from node index to all its children

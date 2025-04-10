@@ -1,7 +1,7 @@
-import type { DbProjectSchema } from "../db_project.js"
+import type { DbProject } from "../db.js"
 import Layout from "./Layout.js"
 
-export default (props: { projects: DbProjectSchema[] }) => {
+export default (props: { projects: DbProject[] }) => {
     return (
         <Layout title='Projects' loggedIn={true} head={<link rel="stylesheet" href="/static/projects.css" />}>
             <h1>Projects!</h1>
