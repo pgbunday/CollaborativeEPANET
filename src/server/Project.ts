@@ -11,7 +11,7 @@ import type { WSContext, WSMessageReceive } from "hono/ws";
 import { z } from "zod";
 import { getUtmZone } from "../coords";
 import { EpanetWrapper } from "../epanet/EpanetWrapper";
-import { EditTree } from "../epanet/edits";
+import EditTree from "../epanet/EditTree";
 import {
 	type ClientboundPacket,
 	EpanetEdit,

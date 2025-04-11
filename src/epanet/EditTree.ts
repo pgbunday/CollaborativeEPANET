@@ -3,7 +3,7 @@
 
 import type { EpanetEdit } from "../packets/clientbound.js";
 
-export class EditTree {
+export default class EditTree {
 	// children maps from node index to all its children
 	public readonly children: Map<number, number[]>;
 	// parents maps from node index to its single parent
