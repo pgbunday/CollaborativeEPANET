@@ -1,21 +1,17 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "esModuleInterop": true,
-    "strict": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
-    "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx",
-  },
-  "exclude": [
-    "vendor/epanet-js"
-  ]
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"esModuleInterop": true,
+		"strict": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"types": ["node"],
+		"jsx": "react-jsx",
+		"jsxImportSource": "hono/jsx"
+	},
+	"exclude": ["vendor/epanet-js"]
 }

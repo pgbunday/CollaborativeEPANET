@@ -1,32 +1,32 @@
 html,
 body {
-    height: 100%;
-    margin: 0;
+	height: 100%;
+	margin: 0;
 }
 
 .app-container {
-    display: flex;
-    flex-flow: column;
-    height: 100%;
+	display: flex;
+	flex-flow: column;
+	height: 100%;
 }
 
 .container {
-    /* border: 1px dotted red; */
+	/* border: 1px dotted red; */
 }
 
 .toolbar-container {
-    flex: 0 1 auto;
+	flex: 0 1 auto;
 }
 
 .map-container {
-    display: flex;
-    flex-flow: column;
-    flex: 1 1 auto;
-    /* overflow-y: auto; */
+	display: flex;
+	flex-flow: column;
+	flex: 1 1 auto;
+	/* overflow-y: auto; */
 }
 
 .ol-search {
-    position: absolute;
-    right: 0.5em;
-    top: 0.5em;
+	position: absolute;
+	right: 0.5em;
+	top: 0.5em;
 }

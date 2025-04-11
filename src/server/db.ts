@@ -1,35 +1,30 @@
 import DB from "better-sqlite3";
 
-import type {
-  ColumnType,
-  Insertable,
-  Selectable,
-  Updateable,
-} from "kysely";
+import type { ColumnType, Insertable, Selectable, Updateable } from "kysely";
 import { Kysely, SqliteDialect } from "kysely";
 import type { DbProjectRoleSchema } from "./db_project";
 
 export interface Database {
-  projects: ProjectsTable
-  users: UsersTable
-  project_user: ProjectUserTable
-  project_snapshots: ProjectSnapshotsTable
-  project_edits: ProjectEditsTable
+	projects: ProjectsTable;
+	users: UsersTable;
+	project_user: ProjectUserTable;
+	project_snapshots: ProjectSnapshotsTable;
+	project_edits: ProjectEditsTable;
 }
 
 export interface ProjectsTable {
-  uuid: string
-  longitude: number
-  latitude: number
-  zoom: number
-  utm_zone: string
-  created_at: ColumnType<Date, string, never>
-  modified_at: ColumnType<Date, string, string>
-  name: string
-  owner_uuid: string
-  edit_count: number
-  current_edit_id: number
-  current_snapshot_id: number
+	uuid: string;
+	longitude: number;
+	latitude: number;
+	zoom: number;
+	utm_zone: string;
+	created_at: ColumnType<Date, string, never>;
+	modified_at: ColumnType<Date, string, string>;
+	name: string;
+	owner_uuid: string;
+	edit_count: number;
+	current_edit_id: number;
+	current_snapshot_id: number;
 }
 
 export type DbProject = Selectable<ProjectsTable>;
@@ -37,12 +32,12 @@ export type NewDbProject = Insertable<ProjectsTable>;
 export type UpdateDbProject = Updateable<ProjectsTable>;
 
 export interface UsersTable {
-  username: string
-  hashed_password: string
-  uuid: string
-  created_at: ColumnType<Date, string, never>
-  last_active: ColumnType<Date, string, string>
-  auth_token: string | null
+	username: string;
+	hashed_password: string;
+	uuid: string;
+	created_at: ColumnType<Date, string, never>;
+	last_active: ColumnType<Date, string, string>;
+	auth_token: string | null;
 }
 
 export type DbUser = Selectable<UsersTable>;
@@ -50,9 +45,9 @@ export type NewDbUser = Insertable<ProjectsTable>;
 export type UpdateDbUser = Updateable<ProjectsTable>;
 
 export interface ProjectUserTable {
-  project_uuid: string
-  user_uuid: string
-  role: DbProjectRoleSchema
+	project_uuid: string;
+	user_uuid: string;
+	role: DbProjectRoleSchema;
 }
 
 export type ProjectUser = Selectable<ProjectUserTable>;
@@ -60,23 +55,24 @@ export type NewProjectUser = Insertable<ProjectUserTable>;
 export type UpdateProjectUser = Updateable<ProjectUserTable>;
 
 export interface ProjectSnapshotsTable {
-  project_uuid: string
-  edit_id: number
-  snapshot_inp: string
+	project_uuid: string;
+	edit_id: number;
+	snapshot_inp: string;
 }
 
 export type ProjectSnapshotsTableEntry = Selectable<ProjectSnapshotsTable>;
 export type NewProjectSnapshotsTableEntry = Insertable<ProjectSnapshotsTable>;
-export type UpdateProjectSnapshotsTableEntry = Updateable<ProjectSnapshotsTable>;
+export type UpdateProjectSnapshotsTableEntry =
+	Updateable<ProjectSnapshotsTable>;
 
 export interface ProjectEditsTable {
-  project_uuid: string
-  edit_id: number
-  snapshot_id: number
-  created_at: ColumnType<Date, string, never>
-  user_uuid: string
-  edit_data: string
-  has_snapshot_file: boolean
+	project_uuid: string;
+	edit_id: number;
+	snapshot_id: number;
+	created_at: ColumnType<Date, string, never>;
+	user_uuid: string;
+	edit_data: string;
+	has_snapshot_file: boolean;
 }
 
 export type DbProjectEdit = Selectable<ProjectEditsTable>;
@@ -86,7 +82,7 @@ export type UpdateProjectEdit = Updateable<ProjectEditsTable>;
 // Make sure all the tables are actually created as specified, with some
 // additional constraints
 const sqlite = new DB("collab.sqlite", {});
-sqlite.pragma('journal_mode = WAL');
+sqlite.pragma("journal_mode = WAL");
 sqlite.exec(`CREATE TABLE IF NOT EXISTS users (
   username TEXT NOT NULL UNIQUE PRIMARY KEY,
   hashed_password TEXT NOT NULL,
@@ -132,16 +128,16 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS project_snapshots (
   )`);
 
 export function getDb(): DB.Database {
-  return sqlite;
+	return sqlite;
 }
 
 const dialect = new SqliteDialect({
-  database: sqlite,
+	database: sqlite,
 });
 
 export const db = new Kysely<Database>({
-  dialect,
-  log: (event) => {
-    console.log(event);
-  },
+	dialect,
+	log: (event) => {
+		console.log(event);
+	},
 });

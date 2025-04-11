@@ -1,39 +1,39 @@
 html,
 body {
-    height: 100%;
-    margin: 0;
+	height: 100%;
+	margin: 0;
 }
 
 .app-container {
-    display: flex;
-    flex-flow: column;
-    height: 100%;
+	display: flex;
+	flex-flow: column;
+	height: 100%;
 }
 
 .toolbar {
-    display: flex;
-    justify-content: space-between;
-    padding: 4px;
+	display: flex;
+	justify-content: space-between;
+	padding: 4px;
 }
 
 .toolbar-left {
-    display: flex;
-    justify-content: left;
+	display: flex;
+	justify-content: left;
 }
 
 .toolbar-right {
-    display: flex;
-    justify-content: right;
+	display: flex;
+	justify-content: right;
 }
 
 .project-name {
-    margin: 0;
-    margin-right: 8px;
+	margin: 0;
+	margin-right: 8px;
 }
 
 .back-button {
-    margin: 0;
-    padding-right: 24px;
+	margin: 0;
+	padding-right: 24px;
 }
 
 /* .toolbar-container {
@@ -41,136 +41,136 @@ body {
 } */
 
 .map-container {
-    display: flex;
-    flex-flow: column;
-    flex: 1 1 auto;
-    /* overflow-y: auto; */
+	display: flex;
+	flex-flow: column;
+	flex: 1 1 auto;
+	/* overflow-y: auto; */
 }
 
 :focus {
-    outline: 0;
-    border-color: #2260ff;
-    box-shadow: 0 0 0 4px #b5c9fc;
+	outline: 0;
+	border-color: #2260ff;
+	box-shadow: 0 0 0 4px #b5c9fc;
 }
 
 .click-modes {
-    display: flex;
-    flex-wrap: wrap;
-    /* margin-top: 0.5rem; */
-    /* justify-content: center; */
-    /* padding: 4px; */
-    font-family: sans-serif;
+	display: flex;
+	flex-wrap: wrap;
+	/* margin-top: 0.5rem; */
+	/* justify-content: center; */
+	/* padding: 4px; */
+	font-family: sans-serif;
 }
 
 .click-modes input[type="radio"] {
-    clip: rect(0, 0, 0, 0);
-    clip-path: inset(100%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
-    white-space: nowrap;
-    width: 1px;
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(100%);
+	height: 1px;
+	overflow: hidden;
+	position: absolute;
+	white-space: nowrap;
+	width: 1px;
 }
 
-.click-modes input[type="radio"]:checked+span {
-    box-shadow: 0 0 0 0.0625em #0043ed;
-    background-color: #dee7ff;
-    z-index: 1;
-    color: #0043ed;
+.click-modes input[type="radio"]:checked + span {
+	box-shadow: 0 0 0 0.0625em #0043ed;
+	background-color: #dee7ff;
+	z-index: 1;
+	color: #0043ed;
 }
 
 .click-modes label span {
-    display: block;
-    cursor: pointer;
-    background-color: #fff;
-    padding: 0.375em .75em;
-    position: relative;
-    margin-left: .0625em;
-    box-shadow: 0 0 0 0.0625em #b5bfd9;
-    letter-spacing: .05em;
-    color: #3e4963;
-    text-align: center;
-    transition: background-color .2s ease;
+	display: block;
+	cursor: pointer;
+	background-color: #fff;
+	padding: 0.375em .75em;
+	position: relative;
+	margin-left: .0625em;
+	box-shadow: 0 0 0 0.0625em #b5bfd9;
+	letter-spacing: .05em;
+	color: #3e4963;
+	text-align: center;
+	transition: background-color .2s ease;
 }
 
 .click-modes label:first-child span {
-    border-radius: .375em 0 0 .375em;
+	border-radius: .375em 0 0 .375em;
 }
 
 .click-modes label:last-child span {
-    border-radius: 0 .375em .375em 0;
+	border-radius: 0 .375em .375em 0;
 }
 
 dialog {
-    max-height: 50%;
+	max-height: 50%;
 }
 
 dialog::backdrop {
-    opacity: 0.7;
-    background: black;
+	opacity: 0.7;
+	background: black;
 }
 
 .ol-search {
-    position: absolute;
-    right: 0.5em;
-    top: 0.5em;
+	position: absolute;
+	right: 0.5em;
+	top: 0.5em;
 }
 
 .ol-popup {
-    position: absolute;
-    background-color: white;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid #ccc;
-    bottom: 12px;
-    left: -50px;
+	position: absolute;
+	background-color: white;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+	padding: 15px;
+	border-radius: 10px;
+	border: 1px solid #ccc;
+	bottom: 12px;
+	left: -50px;
 }
 
 .ol-popup:after,
 ol-popup:before {
-    top: 100%;
-    border: solid transparent;
-    content: " ";
-    height: 0;
-    width: 0;
-    position: absolute;
-    pointer-events: none;
+	top: 100%;
+	border: solid transparent;
+	content: " ";
+	height: 0;
+	width: 0;
+	position: absolute;
+	pointer-events: none;
 }
 
 .ol-popup:after {
-    border-top-color: white;
-    border-width: 10px;
-    left: 48px;
-    margin-left: -10px;
+	border-top-color: white;
+	border-width: 10px;
+	left: 48px;
+	margin-left: -10px;
 }
 
 .ol-popup:before {
-    border-top-color: #ccc;
-    border-width: 11px;
-    left: 48px;
-    margin-left: -11px;
+	border-top-color: #ccc;
+	border-width: 11px;
+	left: 48px;
+	margin-left: -11px;
 }
 
 .ol-popup-closer {
-    text-decoration: none;
-    position: absolute;
-    top: 2px;
-    right: 8px;
+	text-decoration: none;
+	position: absolute;
+	top: 2px;
+	right: 8px;
 }
 
 .data-visualization-control {
-    background-color: white;
-    left: 0.5em;
-    bottom: 0.5em;
+	background-color: white;
+	left: 0.5em;
+	bottom: 0.5em;
 }
 
 .data-visualization-control div {
-    background-color: white;
-    padding: 4px;
-    border-radius: 4px;
+	background-color: white;
+	padding: 4px;
+	border-radius: 4px;
 }
 
 .data-visualization-control button {
-    width: auto;
+	width: auto;
 }

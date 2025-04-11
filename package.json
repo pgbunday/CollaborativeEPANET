@@ -1,40 +1,38 @@
 {
-  "name": "CollaborativeEPANET",
-  "type": "module",
-  "scripts": {
-    "dev": "tsx watch src/server/index.tsx",
-    "build-client": "tsx build-client.ts"
-  },
-  "dependencies": {
-    "@hono/node-server": "^1.14.0",
-    "@hono/node-ws": "^1.1.1",
-    "@maptiler/geocoding-control": "^2.1.6",
-    "@turf/clone": "^7.2.0",
-    "@types/better-sqlite3": "^7.6.13",
-    "bcryptjs": "^3.0.2",
-    "better-sqlite3": "^11.9.1",
-    "dotenv": "^16.4.7",
-    "epanet-js": "file:vendor/epanet-js/packages/epanet-js",
-    "esbuild-plugin-polyfill-node": "^0.3.0",
-    "hono": "^4.7.5",
-    "kysely": "^0.27.6",
-    "ol": "^10.5.0",
-    "sharp": "^0.33.5",
-    "zod": "^3.24.2"
-  },
-  "devDependencies": {
-    "@types/geojson": "^7946.0.16",
-    "@types/node": "^20.17.30",
-    "esbuild": "^0.25.2",
-    "geojson": "^0.5.0",
-    "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3",
-      "esbuild",
-      "sharp"
-    ]
-  }
+	"name": "CollaborativeEPANET",
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch src/server/index.tsx",
+		"build-client": "tsx build-client.ts",
+		"lint": "npx @biomejs/biome check --write"
+	},
+	"dependencies": {
+		"@hono/node-server": "^1.14.0",
+		"@hono/node-ws": "^1.1.1",
+		"@maptiler/geocoding-control": "^2.1.6",
+		"@turf/clone": "^7.2.0",
+		"@types/better-sqlite3": "^7.6.13",
+		"bcryptjs": "^3.0.2",
+		"better-sqlite3": "^11.9.1",
+		"dotenv": "^16.4.7",
+		"epanet-js": "file:vendor/epanet-js/packages/epanet-js",
+		"esbuild-plugin-polyfill-node": "^0.3.0",
+		"hono": "^4.7.5",
+		"kysely": "^0.27.6",
+		"ol": "^10.5.0",
+		"sharp": "^0.33.5",
+		"zod": "^3.24.2"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@types/geojson": "^7946.0.16",
+		"@types/node": "^20.17.30",
+		"esbuild": "^0.25.2",
+		"geojson": "^0.5.0",
+		"tsx": "^4.19.3",
+		"typescript": "^5.8.2"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": ["better-sqlite3", "esbuild", "sharp"]
+	}
 }
