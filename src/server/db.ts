@@ -2,7 +2,7 @@ import DB from "better-sqlite3";
 
 import type { ColumnType, Insertable, Selectable, Updateable } from "kysely";
 import { Kysely, SqliteDialect } from "kysely";
-import type { DbProjectRoleSchema } from "./db_project";
+import type { DbProjectRoleSchema } from "./Project";
 
 export interface Database {
 	projects: ProjectsTable;

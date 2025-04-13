@@ -331,60 +331,6 @@ export default class MapState {
 		this.tanksLayer.setStyle(nodeStyle);
 	}
 
-	// public setNodeStyles({ showLabels, pressureOptions }: { showLabels: boolean, pressureOptions: { low: Pressure, high: Pressure, unit_fn: (x: number) => Pressure } | undefined }) {
-	//     // Allow nodes to be individually colored
-	//     const m: Map<string, [number, number, number]> = new Map<string, [number, number, number]>();
-	//     if (pressureOptions) {
-	//         const pressures = this.epanetState.local.getNodePressures();
-	//         for (const { id, pressure } of pressures) {
-	//             const clamped = (pressure.value - pressureOptions.low.value) / (pressureOptions.high.value - pressureOptions.low.value);
-	//             m.set(id, turbo_color(clamped));
-	//         }
-	//     } else {
-	//         // do nothing, the style function will fall back to plain white
-	//     }
-	//     const f: StyleLike = (feature, resolution) => {
-	//         const id = feature.getProperties().id;
-	//         let fillColorStr = 'rgb(255 255 255)';
-	//         if (m.get(id)) {
-	//             const color = m.get(id)!;
-	//             fillColorStr = 'rgb( ' + Math.floor(color[0] * 255) + ' ' + Math.floor(color[1] * 255) + ' ' + Math.floor(color[2] * 255) + ')';
-	//         }
-	//         let text = undefined;
-	//         if (showLabels) {
-	//             text = new Text({
-	//                 text: feature.getProperties().id,
-	//                 backgroundFill: new Fill({
-	//                     color: 'white',
-	//                 }),
-	//                 backgroundStroke: new Stroke({
-	//                     color: 'black',
-	//                     width: 4,
-	//                 }),
-	//                 offsetY: 32,
-	//                 font: '12px sans-serif',
-	//                 padding: [4, 8, 4, 8]
-	//             })
-	//         }
-	//         return new Style({
-	//             image: new CircleStyle({
-	//                 radius: 14,
-	//                 stroke: new Stroke({
-	//                     color: 'black',
-	//                     width: 4,
-	//                 }),
-	//                 fill: new Fill({
-	//                     color: fillColorStr,
-	//                 })
-	//             }),
-	//             text,
-	//         })
-	//     };
-	//     this.junctionsLayer.setStyle(f);
-	//     this.reservoirsLayer.setStyle(f);
-	//     this.tanksLayer.setStyle(f);
-	// }
-
 	private createBasePopup(): [Overlay, HTMLDivElement, () => void] {
 		const container = document.createElement("div");
 		container.className = "ol-popup";

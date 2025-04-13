@@ -12,6 +12,7 @@ import {
 	handleClientWebSocketOpen,
 	setWsAuthenticated,
 } from "./Project.js";
+import { getUserProjects } from "./Project.js";
 import {
 	type DbUserSchema,
 	getUserByAuthToken,
@@ -21,7 +22,6 @@ import Client from "./components/Client.js";
 import CreateProject from "./components/CreateProject.js";
 import Projects from "./components/Projects.js";
 import type { DbProject } from "./db.js";
-import { getUserProjects } from "./db_project.js";
 
 export function getUserFromContext(c: Context): DbUserSchema | null {
 	const auth_token = getCookie(c, "auth_token");

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { EpanetWrapper } from "../../epanet/EpanetWrapper.js";
 import EditTree from "../../epanet/EditTree.js";
+import { EpanetWrapper } from "../../epanet/EpanetWrapper.js";
 import { ClientboundPacket, EpanetEdit } from "../../packets/clientbound.js";
 import type {
 	ServerboundPacket,
